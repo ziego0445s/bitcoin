@@ -1,101 +1,438 @@
-import Image from "next/image";
+'use client';
+
+import { useEffect, useState, useCallback } from 'react';
+import axios from 'axios';
+import { Line, Bar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+
+// Chart.js 등록
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+// 차트 데이터 타입 정의
+interface LineChartData {
+  labels: string[];
+  datasets: {
+    label: string;
+    data: number[];
+    borderColor?: string;
+    backgroundColor?: string;
+    tension?: number;
+    fill?: boolean;
+  }[];
+}
+
+interface BarChartData {
+  labels: string[];
+  datasets: {
+    label: string;
+    data: number[];
+    backgroundColor?: string;
+    type: 'bar';
+  }[];
+}
+
+// RSI 계산 함수
+const calculateRSI = (prices: number[], periods: number = 14) => {
+  const changes = prices.slice(1).map((price, i) => price - prices[i]);
+  const gains = changes.map(change => change > 0 ? change : 0);
+  const losses = changes.map(change => change < 0 ? Math.abs(change) : 0);
+
+  let avgGain = gains.slice(0, periods).reduce((a, b) => a + b) / periods;
+  let avgLoss = losses.slice(0, periods).reduce((a, b) => a + b) / periods;
+
+  const rsi = [100 - (100 / (1 + avgGain / avgLoss))];
+
+  for (let i = periods; i < changes.length; i++) {
+    avgGain = ((avgGain * (periods - 1)) + gains[i]) / periods;
+    avgLoss = ((avgLoss * (periods - 1)) + losses[i]) / periods;
+    rsi.push(100 - (100 / (1 + avgGain / avgLoss)));
+  }
+
+  return rsi;
+};
+
+// Binance API 응답 타입 정의
+type BinanceKlineData = [
+  number,     // Open time
+  string,     // Open
+  string,     // High
+  string,     // Low
+  string,     // Close
+  string,     // Volume
+  // ... 나머지 필드는 현재 사용하지 않음
+];
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [price, setPrice] = useState<string>('0');
+  const [chartData, setChartData] = useState<LineChartData>({ labels: [], datasets: [] });
+  const [rsiData, setRsiData] = useState<LineChartData>({ labels: [], datasets: [] });
+  const [volumeData, setVolumeData] = useState<BarChartData>({ labels: [], datasets: [] });
+  const [tradingAdvice, setTradingAdvice] = useState<string>('');
+  const [lastUpdateTime, setLastUpdateTime] = useState<string>('');
+  const [isGptResponse, setIsGptResponse] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  // 실시간 가격 가져오기 useEffect를 15분 간격 업데이트로 수정
+  useEffect(() => {
+    const fetchCurrentPrice = async () => {
+      try {
+        const response = await axios.get('https://api.binance.com/api/v3/ticker/price', {
+          params: {
+            symbol: 'BTCUSDT'
+          }
+        });
+        setPrice(parseFloat(response.data.price).toFixed(2));
+      } catch (error) {
+        console.error('Error fetching current price:', error);
+      }
+    };
+
+    fetchCurrentPrice(); // 초기 가격 가져오기
+    const interval = setInterval(fetchCurrentPrice, 900000); // 15분 = 900000ms
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // 30분봉 데이터 가져오기
+  useEffect(() => {
+    const fetchKlineData = async () => {
+      try {
+        const response = await axios.get<BinanceKlineData[]>(
+          'https://api.binance.com/api/v3/klines',
+          {
+            params: {
+              symbol: 'BTCUSDT',
+              interval: '30m',
+              limit: 48
+            }
+          }
+        );
+
+        const labels = response.data.map((item) => 
+          new Date(item[0]).toLocaleTimeString()
+        );
+        
+        const prices = response.data.map((item) => 
+          parseFloat(item[4])
+        );
+
+        const volumes = response.data.map((item) => 
+          parseFloat(item[5])
+        );
+
+        // RSI 계산
+        const rsiValues = calculateRSI(prices);
+        
+        // 가격 차트 데이터
+        setChartData({
+          labels,
+          datasets: [
+            {
+              label: 'Bitcoin Price (USDT)',
+              data: prices,
+              borderColor: 'rgb(75, 192, 192)',
+              tension: 0.1
+            }
+          ]
+        });
+
+        // RSI 차트 데이터
+        setRsiData({
+          labels,
+          datasets: [
+            {
+              label: 'RSI',
+              data: rsiValues,
+              borderColor: 'rgb(255, 99, 132)',
+              tension: 0.1,
+              fill: false
+            }
+          ]
+        });
+
+        // 거래량 차트 데이터
+        setVolumeData({
+          labels,
+          datasets: [
+            {
+              label: 'Volume',
+              data: volumes,
+              backgroundColor: 'rgb(53, 162, 235, 0.5)',
+              type: 'bar'
+            }
+          ]
+        });
+
+      } catch (error) {
+        console.error('Error fetching kline data:', error);
+      }
+    };
+
+    fetchKlineData();
+    const interval = setInterval(fetchKlineData, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // GPT 트레이딩 조언 가져오기
+  const fetchTradingAdvice = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      // 현재 가격에서 $ 및 쉼표 제거하고 숫자로 변환
+      const currentPrice = parseFloat(price.replace(/[$,]/g, ''));
+      
+      // 마지막 RSI 값 가져오기
+      const currentRsi = rsiData.datasets[0]?.data?.slice(-1)[0];
+      if (!currentRsi) {
+        throw new Error('RSI 데이터를 찾을 수 없습니다.');
+      }
+
+      // 마지막 거래량 값 가져오기
+      const currentVolume = volumeData.datasets[0]?.data?.slice(-1)[0];
+      if (!currentVolume) {
+        throw new Error('거래량 데이터를 찾을 수 없습니다.');
+      }
+
+      const response = await fetch('/api/trading-advice', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          price: currentPrice,
+          rsi: currentRsi.toFixed(2),
+          volume: currentVolume.toFixed(2),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('API 요청에 실패했습니다.');
+      }
+
+      const advice = await response.text();
+      setTradingAdvice(advice);
+      setLastUpdateTime(new Date().toLocaleTimeString());
+      setIsGptResponse(true);
+    } catch (err) {
+      console.error('Error fetching trading advice:', err);
+      setTradingAdvice('데이터를 불러오는데 실패했습니다. 차트 데이터가 로드된 후 다시 시도해주세요.');
+      setIsGptResponse(false);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [price, rsiData, volumeData]); // 의존성 배열에 필요한 상태들 추가
+
+  return (
+    <main className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* 헤더 섹션 */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">Bitcoin Trading Analysis</h1>
+          <div className="flex items-center space-x-4">
+            <p className="text-2xl text-gray-600">
+              Current Price: <span className="font-bold text-blue-600">${price}</span>
+            </p>
+            <div className="h-6 w-px bg-gray-300" /> {/* 구분선 */}
+            <p className="text-sm text-gray-500">
+              Last updated: {new Date().toLocaleTimeString()}
+            </p>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+
+        {/* 차트 그리드 */}
+        <div className="grid grid-cols-1 gap-6 mb-8">
+          {/* 가격 차트 */}
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="w-full h-[400px]">
+              {chartData.datasets.length > 0 && (
+                <Line
+                  data={chartData}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      title: {
+                        display: true,
+                        text: 'Bitcoin 30-Minute Price Chart',
+                        font: {
+                          size: 16,
+                          weight: 'bold'
+                        }
+                      },
+                      legend: {
+                        position: 'top'
+                      }
+                    }
+                  }}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* RSI & Volume 차트 */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="w-full h-[250px]">
+                {rsiData.datasets.length > 0 && (
+                  <Line
+                    data={rsiData}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        title: {
+                          display: true,
+                          text: 'RSI Indicator (14)',
+                          font: {
+                            size: 16,
+                            weight: 'bold'
+                          }
+                        }
+                      },
+                      scales: {
+                        y: {
+                          min: 0,
+                          max: 100,
+                          grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                          }
+                        }
+                      }
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="w-full h-[250px]">
+                {volumeData.datasets.length > 0 && (
+                  <Bar
+                    data={volumeData}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        title: {
+                          display: true,
+                          text: 'Trading Volume',
+                          font: {
+                            size: 16,
+                            weight: 'bold'
+                          }
+                        }
+                      }
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Trading Advice Section */}
+        <div className="bg-white rounded-xl shadow-lg p-8">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <h2 className="text-3xl font-bold text-gray-800 mb-2">AI Trading Recommendation</h2>
+              <div className="flex items-center">
+                <div className={`w-3 h-3 rounded-full mr-2 ${
+                  isLoading ? 'bg-yellow-500 animate-pulse' :
+                  isGptResponse ? 'bg-green-500' : 'bg-red-500'
+                }`} />
+                <span className="text-sm font-medium text-gray-600">
+                  {isLoading ? 'Analyzing market data...' :
+                   isGptResponse ? 'AI Analysis Complete' : 'Analysis Unavailable'}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={fetchTradingAdvice}
+              disabled={isLoading}
+              className={`px-6 py-3 rounded-lg font-semibold transition-all transform
+                ${isLoading 
+                  ? 'bg-gray-300 cursor-not-allowed' 
+                  : 'bg-blue-600 hover:bg-blue-700 hover:shadow-lg active:scale-95'
+                } text-white`}
+            >
+              {isLoading ? (
+                <span className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  분석 중...
+                </span>
+              ) : '새로운 분석 받기'}
+            </button>
+          </div>
+          
+          <div className="mb-4 text-sm text-gray-500">
+            마지막 업데이트: {lastUpdateTime}
+          </div>
+          
+          {tradingAdvice ? (
+            <div className="bg-gradient-to-br from-gray-50 to-white rounded-lg p-8 shadow-inner">
+              <div className="space-y-6 text-lg">
+                {tradingAdvice.split('\n').map((line, index) => {
+                  if (line.startsWith('매수 목표가:')) {
+                    return (
+                      <div key={index} className="flex items-center space-x-2 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                        <span className="text-blue-600 font-bold text-xl tracking-wide">{line}</span>
+                      </div>
+                    );
+                  } else if (line.startsWith('손절가:')) {
+                    return (
+                      <div key={index} className="flex items-center space-x-2 p-4 bg-red-50 rounded-lg border border-red-100">
+                        <span className="text-red-600 font-bold text-xl tracking-wide">{line}</span>
+                      </div>
+                    );
+                  } else if (line.startsWith('익절가:')) {
+                    return (
+                      <div key={index} className="flex items-center space-x-2 p-4 bg-green-50 rounded-lg border border-green-100">
+                        <span className="text-green-600 font-bold text-xl tracking-wide">{line}</span>
+                      </div>
+                    );
+                  } else if (line.startsWith('분석:')) {
+                    return (
+                      <div key={index} className="mt-6 pt-6 border-t border-gray-200">
+                        <div className="font-semibold text-gray-700 mb-3 text-xl">시장 분석</div>
+                        <div className="text-gray-700 font-medium leading-relaxed text-lg tracking-wide">
+                          {line.replace('분석:', '').trim()}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return <div key={index}>{line}</div>;
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center text-gray-500 py-12 text-lg">
+              분석을 시작하려면 '새로운 분석 받기' 버튼을 클릭하세요
+            </div>
+          )}
+        </div>
+      </div>
+    </main>
   );
 }
