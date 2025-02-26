@@ -28,10 +28,10 @@ export default function RootLayout({
         <div className="flex justify-center">
           <ins 
             className="kakao_ad_area" 
-            style={{ display: "block" }}
-            data-ad-unit="DAN-a5mKu4txlp3qxK63"
-            data-ad-width="728"
-            data-ad-height="90"
+            style={{ display: "none" }}
+            data-ad-unit="DAN-0A1Dxif5Rgz57Nwg"
+            data-ad-width="320"
+            data-ad-height="100"
           />
           <Script
             src="//t1.daumcdn.net/kas/static/ba.min.js"
