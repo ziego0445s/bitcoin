@@ -24,11 +24,11 @@ export default function RootLayout({
         <title>Bitcoin Trading Analysis</title>
       </head>
       <body className={inter.className}>
-        {/* Kakao 광고 */}
-        <div>
+        {/* Kakao 광고 (상단) */}
+        <div className="flex justify-center">
           <ins 
             className="kakao_ad_area" 
-            style={{ display: "none" }}
+            style={{ display: "block" }}
             data-ad-unit="DAN-a5mKu4txlp3qxK63"
             data-ad-width="728"
             data-ad-height="90"
@@ -38,7 +38,23 @@ export default function RootLayout({
             async
           />
         </div>
+
         {children}
+
+        {/* Kakao 광고 (하단) */}
+        <div className="flex justify-center mt-8">
+          <ins 
+            className="kakao_ad_area" 
+            style={{ display: "block" }}
+            data-ad-unit="DAN-6jUyeCB09Hw8CGmH"
+            data-ad-width="300"
+            data-ad-height="250"
+          />
+          <Script
+            src="//t1.daumcdn.net/kas/static/ba.min.js"
+            async
+          />
+        </div>
       </body>
     </html>
   );
