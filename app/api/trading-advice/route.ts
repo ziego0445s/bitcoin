@@ -43,7 +43,7 @@ export async function POST(req: Request) {
       messages: [
         {
           role: "system",
-          content: "당신은 암호화폐 트레이딩 전문가입니다. 주어진 데이터를 분석하여 JSON 형식으로 응답해주세요."
+          content: "당신은 암호화폐 트레이딩 전문가입니다. 주어진 데이터를 분석하여 JSON 형식으로 응답해주세요. 진입가격은 현재가격 보다 높을순 없어 볼린저밴드 하단보다 위쪽으로 시장상황에 맞게 잘 지정해줘"
         },
         {
           role: "user",
@@ -70,7 +70,7 @@ export async function POST(req: Request) {
             buyTarget는 롱으로 진입하는 가격을 뜻하고
             stopLoss 는 손절가를 말해
             takeProfit 익절가를 말하는거야
-            
+
             {
               "buyTarget": "$XX,XXX",
               "stopLoss": "$XX,XXX",
