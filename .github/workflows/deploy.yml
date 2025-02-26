@@ -10,6 +10,16 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       
+      # 더 자세한 디버그 정보 추가
+      - name: Debug
+        run: |
+          echo "Checking environment..."
+          echo "Secret length: ${#OPENAI_API_KEY}"
+          echo "Env file content after creation:"
+          cat .env || echo "No .env file"
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      
       - name: Use Node.js
         uses: actions/setup-node@v2
         with:
@@ -18,7 +28,12 @@ jobs:
       - name: Install dependencies
         run: npm install
         
+      - name: Create env file
+        run: |
+          touch .env
+          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> .env
+          echo "Created .env file:"
+          cat .env
+        
       - name: Build
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: npm run build 

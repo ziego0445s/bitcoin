@@ -1,6 +1,11 @@
 import { OpenAI } from 'openai';
 import { NextResponse } from 'next/server';
 
+// API 키 확인 로직 강화
+console.log('Environment check in API route:');
+console.log('API Key exists:', !!process.env.OPENAI_API_KEY);
+console.log('API Key length:', process.env.OPENAI_API_KEY?.length);
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
