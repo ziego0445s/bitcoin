@@ -66,8 +66,11 @@ export async function POST(req: Request) {
             
             시장 심리:
             - 시장 감성 지수: ${marketSentiment}
+
+            buyTarget는 롱으로 진입하는 가격을 뜻하고
+            stopLoss 는 손절가를 말해
+            takeProfit 익절가를 말하는거야
             
-            다음 JSON 형식으로 응답해주세요:
             {
               "buyTarget": "$XX,XXX",
               "stopLoss": "$XX,XXX",
