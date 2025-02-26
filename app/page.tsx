@@ -284,24 +284,24 @@ export default function Home() {
   }, [price, chartData, rsiData, volumeData]);
 
   return (
-    <main className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-7xl mx-auto">
+    <main className="min-h-screen bg-gray-50 p-2 sm:p-8">
+      <div className="max-w-full mx-auto">
         {/* 헤더 섹션 */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">Bitcoin Trading Analysis</h1>
-          <div className="flex items-center space-x-4">
-            <p className="text-2xl text-gray-600">
+        <div className="bg-white rounded-lg shadow-lg p-3 sm:p-6 mb-4">
+          <h1 className="text-2xl sm:text-4xl font-bold text-gray-800 mb-2">Bitcoin Trading Analysis</h1>
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            <p className="text-xl sm:text-2xl text-gray-600">
               Current Price: <span className="font-bold text-blue-600">${price}</span>
             </p>
-            <div className="h-6 w-px bg-gray-300" /> {/* 구분선 */}
-            <p className="text-sm text-gray-500">
+            <div className="h-6 w-px bg-gray-300" />
+            <p className="text-xs sm:text-sm text-gray-500">
               Last updated: {currentTime}
             </p>
           </div>
         </div>
 
-        {/* Trading Advice Section - 위치 이동 */}
-        <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
+        {/* Trading Advice Section */}
+        <div className="bg-white rounded-lg shadow-lg p-3 sm:p-6 mb-4">
           <div className="flex justify-between items-start mb-6">
             <div>
               <h2 className="text-3xl font-bold text-gray-800 mb-2">AI Trading Recommendation</h2>
@@ -344,50 +344,52 @@ export default function Home() {
           {tradingAdvice ? (
             <div className="bg-gradient-to-br from-gray-50 to-white rounded-lg p-8 shadow-inner">
               {/* 가격 정보 카드 그리드 */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                <div className="bg-blue-50 rounded-lg p-6 border border-blue-100">
-                  <h3 className="text-sm font-semibold text-blue-500 mb-2">매수 목표가</h3>
-                  <p className="text-2xl font-bold text-blue-700">{tradingAdvice.buyTarget}</p>
-                </div>
-                <div className="bg-red-50 rounded-lg p-6 border border-red-100">
-                  <h3 className="text-sm font-semibold text-red-500 mb-2">손절가</h3>
-                  <p className="text-2xl font-bold text-red-700">{tradingAdvice.stopLoss}</p>
-                </div>
-                <div className="bg-green-50 rounded-lg p-6 border border-green-100">
-                  <h3 className="text-sm font-semibold text-green-500 mb-2">익절가</h3>
-                  <p className="text-2xl font-bold text-green-700">{tradingAdvice.takeProfit}</p>
-                </div>
-              </div>
-
-              {/* 분석 섹션 */}
-              <div className="space-y-6">
-                <h3 className="text-xl font-bold text-gray-800 mb-4">시장 분석</h3>
-                
-                <div className="space-y-4">
-                  <div className="bg-white rounded-lg p-6 shadow-sm">
-                    <h4 className="text-lg font-semibold text-gray-700 mb-2">시장 트렌드</h4>
-                    <p className="text-gray-600 leading-relaxed">{tradingAdvice.analysis.trend}</p>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
+                  <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
+                    <h3 className="text-sm font-semibold text-blue-500">매수 목표가</h3>
+                    <p className="text-xl sm:text-2xl font-bold text-blue-700">{tradingAdvice.buyTarget}</p>
                   </div>
-
-                  <div className="bg-white rounded-lg p-6 shadow-sm">
-                    <h4 className="text-lg font-semibold text-gray-700 mb-2">기술적 지표</h4>
-                    <p className="text-gray-600 leading-relaxed">{tradingAdvice.analysis.technical}</p>
+                  <div className="bg-red-50 rounded-lg p-3 border border-red-100">
+                    <h3 className="text-sm font-semibold text-red-500">손절가</h3>
+                    <p className="text-xl sm:text-2xl font-bold text-red-700">{tradingAdvice.stopLoss}</p>
                   </div>
-
-                  <div className="bg-white rounded-lg p-6 shadow-sm">
-                    <h4 className="text-lg font-semibold text-gray-700 mb-2">거래량 분석</h4>
-                    <p className="text-gray-600 leading-relaxed">{tradingAdvice.analysis.volume}</p>
+                  <div className="bg-green-50 rounded-lg p-3 border border-green-100">
+                    <h3 className="text-sm font-semibold text-green-500">익절가</h3>
+                    <p className="text-xl sm:text-2xl font-bold text-green-700">{tradingAdvice.takeProfit}</p>
                   </div>
+                </div>
 
-                  <div className="bg-white rounded-lg p-6 shadow-sm border-l-4 border-blue-500">
-                    <h4 className="text-lg font-semibold text-gray-700 mb-2">종합 결론</h4>
-                    <p className="text-gray-600 leading-relaxed">{tradingAdvice.analysis.conclusion}</p>
+                {/* 분석 섹션 */}
+                <div className="space-y-3">
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-800">시장 분석</h3>
+                  
+                  <div className="space-y-2">
+                    <div className="bg-white rounded-lg p-3 shadow-sm">
+                      <h4 className="text-base font-semibold text-gray-700">시장 트렌드</h4>
+                      <p className="text-sm sm:text-base text-gray-600">{tradingAdvice.analysis.trend}</p>
+                    </div>
+
+                    <div className="bg-white rounded-lg p-3 shadow-sm">
+                      <h4 className="text-base font-semibold text-gray-700">기술적 지표</h4>
+                      <p className="text-sm sm:text-base text-gray-600">{tradingAdvice.analysis.technical}</p>
+                    </div>
+
+                    <div className="bg-white rounded-lg p-3 shadow-sm">
+                      <h4 className="text-base font-semibold text-gray-700">거래량 분석</h4>
+                      <p className="text-sm sm:text-base text-gray-600">{tradingAdvice.analysis.volume}</p>
+                    </div>
+
+                    <div className="bg-white rounded-lg p-3 shadow-sm border-l-4 border-blue-500">
+                      <h4 className="text-base font-semibold text-gray-700">종합 결론</h4>
+                      <p className="text-sm sm:text-base text-gray-600">{tradingAdvice.analysis.conclusion}</p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="text-center text-gray-500 py-12 text-lg">
+            <div className="text-center text-gray-500 py-6 text-base">
               분석을 시작하려면 '새로운 분석 받기' 버튼을 클릭하세요
             </div>
           )}

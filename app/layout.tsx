@@ -2,6 +2,7 @@
 import type { Metadata } from "next";
 import { Inter, Montserrat, Roboto_Mono } from 'next/font/google';
 import "./globals.css";
+import Script from 'next/script';
 
 const inter = Inter({ subsets: ['latin'] });
 const montserrat = Montserrat({ subsets: ['latin'] });
@@ -22,7 +23,23 @@ export default function RootLayout({
       <head>
         <title>Bitcoin Trading Analysis</title>
       </head>
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        {/* Kakao 광고 */}
+        <div>
+          <ins 
+            className="kakao_ad_area" 
+            style={{ display: "none" }}
+            data-ad-unit="DAN-a5mKu4txlp3qxK63"
+            data-ad-width="728"
+            data-ad-height="90"
+          />
+          <Script
+            src="//t1.daumcdn.net/kas/static/ba.min.js"
+            async
+          />
+        </div>
+        {children}
+      </body>
     </html>
   );
 }
