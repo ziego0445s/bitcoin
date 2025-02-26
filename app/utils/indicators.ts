@@ -61,4 +61,151 @@ export const calculateMarketSentiment = (
   const bbScore = position < 0.3 ? 30 : position > 0.7 ? 0 : ((0.7 - position) / 0.4) * 30;
   
   return rsiScore + macdScore + bbScore;
+};
+
+// 1. Stochastic Oscillator
+export const calculateStochastic = (prices: number[], period: number = 14) => {
+  const highs = prices.map((_, i) => 
+    Math.max(...prices.slice(Math.max(0, i - period + 1), i + 1))
+  );
+  const lows = prices.map((_, i) => 
+    Math.min(...prices.slice(Math.max(0, i - period + 1), i + 1))
+  );
+  
+  return prices.map((price, i) => {
+    const high = highs[i];
+    const low = lows[i];
+    return ((price - low) / (high - low)) * 100;
+  });
+};
+
+// 2. OBV (On Balance Volume)
+export const calculateOBV = (prices: number[], volumes: number[]) => {
+  return prices.reduce((obv, price, i) => {
+    if (i === 0) return [volumes[0]];
+    const prevPrice = prices[i - 1];
+    const currentVolume = volumes[i];
+    const lastOBV = obv[obv.length - 1];
+    
+    if (price > prevPrice) {
+      obv.push(lastOBV + currentVolume);
+    } else if (price < prevPrice) {
+      obv.push(lastOBV - currentVolume);
+    } else {
+      obv.push(lastOBV);
+    }
+    return obv;
+  }, [] as number[]);
+};
+
+// 3. 차트 패턴 분석
+export const analyzePricePatterns = (prices: number[]) => {
+  return {
+    isDoji: checkDoji(prices),
+    isMorningStar: checkMorningStar(prices),
+    isHammer: checkHammer(prices)
+  };
+};
+
+// 도지 패턴 확인
+const checkDoji = (prices: number[]) => {
+  const lastCandle = prices.slice(-1)[0];
+  const prevCandle = prices.slice(-2)[0];
+  const bodySize = Math.abs(lastCandle - prevCandle);
+  const averagePrice = (lastCandle + prevCandle) / 2;
+  
+  // 시가와 종가의 차이가 평균가격의 0.1% 이하면 도지로 간주
+  return bodySize / averagePrice < 0.001;
+};
+
+// 모닝스타 패턴 확인
+const checkMorningStar = (prices: number[]) => {
+  if (prices.length < 3) return false;
+  
+  const [firstCandle, secondCandle, thirdCandle] = prices.slice(-3);
+  
+  // 첫 캔들이 하락, 두번째 캔들이 작은 몸통, 세번째 캔들이 상승
+  return firstCandle > secondCandle && 
+         Math.abs(secondCandle - prices.slice(-4)[0]) < Math.abs(firstCandle - prices.slice(-4)[0]) * 0.3 &&
+         thirdCandle > secondCandle;
+};
+
+// 해머 패턴 확인
+const checkHammer = (prices: number[]) => {
+  const lastCandle = prices.slice(-1)[0];
+  const prevCandle = prices.slice(-2)[0];
+  const lowPrice = Math.min(lastCandle, prevCandle);
+  const highPrice = Math.max(lastCandle, prevCandle);
+  const bodySize = Math.abs(lastCandle - prevCandle);
+  const shadowSize = highPrice - lowPrice;
+  
+  // 아래 그림자가 몸통의 2배 이상이면 해머로 간주
+  return shadowSize > bodySize * 2 && lastCandle > prevCandle;
+};
+
+// 4. Binance API 관련 함수들
+export const fetchFundingRate = async (): Promise<number> => {
+  try {
+    const response = await fetch(`https://fapi.binance.com/fapi/v1/premiumIndex?symbol=BTCUSDT`);
+    const data = await response.json();
+    return parseFloat(data.lastFundingRate) * 100; // 퍼센트로 변환
+  } catch (error) {
+    console.error('Error fetching funding rate:', error);
+    return 0;
+  }
+};
+
+export const fetchOpenInterest = async (): Promise<number> => {
+  try {
+    const response = await fetch(`https://fapi.binance.com/fapi/v1/openInterest?symbol=BTCUSDT`);
+    const data = await response.json();
+    return parseFloat(data.openInterest);
+  } catch (error) {
+    console.error('Error fetching open interest:', error);
+    return 0;
+  }
+};
+
+export const fetchMarketDepth = async () => {
+  try {
+    const response = await fetch(`https://api.binance.com/api/v3/depth?symbol=BTCUSDT&limit=100`);
+    const data = await response.json();
+    
+    // 매수/매도 압력 계산
+    const buyPressure = data.bids.reduce((sum: number, [price, quantity]: string[]) => 
+      sum + parseFloat(price) * parseFloat(quantity), 0);
+    const sellPressure = data.asks.reduce((sum: number, [price, quantity]: string[]) => 
+      sum + parseFloat(price) * parseFloat(quantity), 0);
+    
+    return {
+      buyPressure,
+      sellPressure
+    };
+  } catch (error) {
+    console.error('Error fetching market depth:', error);
+    return {
+      buyPressure: 0,
+      sellPressure: 0
+    };
+  }
+};
+
+// RSI 계산 함수 추가 (page.tsx에서 이동)
+export const calculateRSI = (prices: number[], periods: number = 14) => {
+  const changes = prices.slice(1).map((price, i) => price - prices[i]);
+  const gains = changes.map(change => change > 0 ? change : 0);
+  const losses = changes.map(change => change < 0 ? Math.abs(change) : 0);
+
+  let avgGain = gains.slice(0, periods).reduce((a, b) => a + b) / periods;
+  let avgLoss = losses.slice(0, periods).reduce((a, b) => a + b) / periods;
+
+  const rsi = [100 - (100 / (1 + avgGain / avgLoss))];
+
+  for (let i = periods; i < changes.length; i++) {
+    avgGain = ((avgGain * (periods - 1)) + gains[i]) / periods;
+    avgLoss = ((avgLoss * (periods - 1)) + losses[i]) / periods;
+    rsi.push(100 - (100 / (1 + avgGain / avgLoss)));
+  }
+
+  return rsi;
 }; 

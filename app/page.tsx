@@ -19,7 +19,14 @@ import {
   calculateMA,
   calculateMACD,
   calculateBollingerBands,
-  calculateMarketSentiment
+  calculateMarketSentiment,
+  calculateStochastic,
+  calculateOBV,
+  analyzePricePatterns,
+  fetchFundingRate,
+  fetchOpenInterest,
+  fetchMarketDepth,
+  calculateRSI
 } from './utils/indicators';
 
 // Chart.js 등록
@@ -69,26 +76,6 @@ interface TradingAdvice {
     conclusion: string;
   };
 }
-
-// RSI 계산 함수
-const calculateRSI = (prices: number[], periods: number = 14) => {
-  const changes = prices.slice(1).map((price, i) => price - prices[i]);
-  const gains = changes.map(change => change > 0 ? change : 0);
-  const losses = changes.map(change => change < 0 ? Math.abs(change) : 0);
-
-  let avgGain = gains.slice(0, periods).reduce((a, b) => a + b) / periods;
-  let avgLoss = losses.slice(0, periods).reduce((a, b) => a + b) / periods;
-
-  const rsi = [100 - (100 / (1 + avgGain / avgLoss))];
-
-  for (let i = periods; i < changes.length; i++) {
-    avgGain = ((avgGain * (periods - 1)) + gains[i]) / periods;
-    avgLoss = ((avgLoss * (periods - 1)) + losses[i]) / periods;
-    rsi.push(100 - (100 / (1 + avgGain / avgLoss)));
-  }
-
-  return rsi;
-};
 
 // Binance API 응답 타입 정의
 type BinanceKlineData = [
@@ -222,6 +209,34 @@ export default function Home() {
   const fetchTradingAdvice = useCallback(async () => {
     try {
       setIsLoading(true);
+      
+      // 24시간 데이터 준비 (30분봉 48개)
+      const last48Prices = chartData.datasets[0]?.data || [];
+      const last48Times = chartData.labels || [];
+      const last48Volumes = volumeData.datasets[0]?.data || [];
+      const last48Rsi = rsiData.datasets[0]?.data || [];
+
+      // 24시간 데이터 포맷팅
+      const historicalData = last48Times.map((time, i) => {
+        const price = last48Prices[i] || 0;
+        const volume = last48Volumes[i] || 0;
+        const rsi = last48Rsi[i] || 0;
+        const macd = calculateMACD(last48Prices.slice(0, i + 1)) || 0;
+        const bollingerBands = calculateBollingerBands(last48Prices.slice(0, i + 1)) || { upper: 0, lower: 0 };
+
+        return {
+          time: time || '',
+          price: price.toFixed(2),
+          volume: volume.toFixed(2),
+          rsi: rsi.toFixed(2),
+          macd: macd.toFixed(2),
+          bollingerBands: {
+            upper: bollingerBands.upper.toFixed(2),
+            lower: bollingerBands.lower.toFixed(2)
+          }
+        };
+      }).filter(data => data.time !== ''); // 빈 데이터 제거
+
       const currentPrice = parseFloat(price.replace(/[$,]/g, ''));
       const currentRsi = rsiData.datasets[0]?.data?.slice(-1)[0] || 0;
       const currentVolume = volumeData.datasets[0]?.data?.slice(-1)[0] || 0;
@@ -247,6 +262,45 @@ export default function Home() {
       // 시장 감성 지수 계산 (RSI, MACD, 볼린저 밴드 기반)
       const marketSentiment = calculateMarketSentiment(currentRsi, macd, currentPrice, bollingerUpper, bollingerLower);
 
+      // 추가 데이터 계산
+      const stochasticValues = calculateStochastic(prices);
+      const obvValues = calculateOBV(prices, volumes);
+      
+      // Binance API에서 추가 데이터 가져오기
+      const [fundingRate, openInterest] = await Promise.all([
+        fetchFundingRate(),
+        fetchOpenInterest()
+      ]);
+      
+      // 차트 패턴 분석
+      const patterns = analyzePricePatterns(prices);
+      
+      // 시장 심리 분석
+      const marketDepth = await fetchMarketDepth();
+      
+      console.log('API request payload:', {
+        price: currentPrice,
+        rsi: currentRsi.toFixed(2),
+        volume: currentVolume.toFixed(2),
+        priceChange24h,
+        volumeChange24h,
+        macd: macd.toFixed(2),
+        ma50: ma50.toFixed(2),
+        ma200: ma200.toFixed(2),
+        bollingerUpper: bollingerUpper.toFixed(2),
+        bollingerLower: bollingerLower.toFixed(2),
+        marketSentiment: marketSentiment.toFixed(2),
+        stochastic: {
+          k: stochasticValues[stochasticValues.length - 1] || 0,
+          d: calculateMA(stochasticValues, 3) || 0
+        },
+        obv: obvValues[obvValues.length - 1],
+        pricePatterns: patterns,
+        marketDepth,
+        fundingRate,
+        openInterest
+      });
+
       const response = await fetch('/api/trading-advice', {
         method: 'POST',
         headers: {
@@ -264,20 +318,42 @@ export default function Home() {
           bollingerUpper: bollingerUpper.toFixed(2),
           bollingerLower: bollingerLower.toFixed(2),
           marketSentiment: marketSentiment.toFixed(2),
+          stochastic: {
+            k: stochasticValues[stochasticValues.length - 1] || 0,
+            d: calculateMA(stochasticValues, 3) || 0
+          },
+          obv: obvValues[obvValues.length - 1],
+          pricePatterns: patterns,
+          marketDepth,
+          fundingRate,
+          openInterest,
+          historicalData
         }),
       });
 
+      console.log('API response status:', response.status);
+
+      const responseData = await response.json();
+      
       if (!response.ok) {
-        throw new Error('API 요청에 실패했습니다.');
+        throw new Error(responseData.details || responseData.error || 'API 요청에 실패했습니다.');
       }
 
-      const advice = await response.json();
-      setTradingAdvice(advice);
+      if (responseData.error) {
+        throw new Error(responseData.error);
+      }
+
+      setTradingAdvice(responseData);
       setIsGptResponse(true);
     } catch (err) {
-      console.error('Error fetching trading advice:', err);
+      const error = err as Error;
+      console.error('Trading advice error:', {
+        message: error.message,
+        timestamp: new Date().toISOString()
+      });
       setTradingAdvice(null);
       setIsGptResponse(false);
+      alert(`분석 중 오류가 발생했습니다: ${error.message}`);
     } finally {
       setIsLoading(false);
     }

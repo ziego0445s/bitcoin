@@ -7,7 +7,10 @@ console.log('API Key exists:', !!process.env.OPENAI_API_KEY);
 console.log('API Key length:', process.env.OPENAI_API_KEY?.length);
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+  apiKey: process.env.OPENAI_API_KEY || (() => {
+    console.error('OPENAI_API_KEY is not set');
+    throw new Error('OpenAI API key is not configured');
+  })()
 });
 
 interface TradingAdvice {
@@ -22,50 +25,97 @@ interface TradingAdvice {
   };
 }
 
+interface MarketData {
+  // ... 기존 데이터 ...
+  stochastic: {
+    k: number;  // Fast %K
+    d: number;  // Slow %D
+  };
+  obv: number;  // On Balance Volume
+  pricePatterns: {
+    isDoji: boolean;        // 도지 패턴
+    isMorningStar: boolean; // 모닝스타 패턴
+    isHammer: boolean;      // 해머 패턴
+  };
+  marketDepth: {
+    buyPressure: number;    // 매수 압력
+    sellPressure: number;   // 매도 압력
+  };
+  fundingRate: number;      // 펀딩비
+  openInterest: number;     // 미체결약정
+}
+
+interface HistoricalDataPoint {
+  time: string;
+  price: string;
+  volume: string;
+  rsi: string;
+  macd: string;
+  bollingerUpper: string;
+  bollingerLower: string;
+}
+
 export async function POST(req: Request) {
-  const { 
-    price,
-    rsi,
-    volume,
-    priceChange24h,    // 24시간 가격 변화율
-    volumeChange24h,   // 24시간 거래량 변화율
-    macd,             // MACD 지표
-    ma50,            // 50일 이동평균
-    ma200,           // 200일 이동평균
-    bollingerUpper,  // 볼린저 밴드 상단
-    bollingerLower,  // 볼린저 밴드 하단
-    marketSentiment, // 시장 감성 지수
-  } = await req.json();
-  
+  console.log('Trading advice request received:', new Date().toISOString());
   try {
+    const data = await req.json();
+    console.log('Request data:', data);
+
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
-          content: "당신은 암호화폐 트레이딩 전문가입니다. 주어진 데이터를 분석하여 JSON 형식으로 응답해주세요. 진입가격은 현재가격 보다 높을순 없어 볼린저밴드 하단보다 위쪽으로 시장상황에 맞게 잘 지정해줘"
+          content: "당신은 암호화폐 트레이딩 전문가입니다. 주어진 데이터를 분석하여 JSON 형식으로 응답해주세요. 특히 24시간 동안의 가격 변화와 지표 변화를 중점적으로 분석해주세요. 진입가격은 현재가격 보다 높을순 없어 볼린저밴드 하단보다 위쪽으로 시장상황에 맞게 잘 지정해줘"
         },
         {
           role: "user",
           content: `현재 비트코인 시장 데이터:
             
-            가격 정보:
-            - 현재가: $${price}
-            - 24시간 변화율: ${priceChange24h}%
+            최근 24시간 데이터:
+            ${data.historicalData.map((h: HistoricalDataPoint) => `
+            시간: ${h.time}
+            - 가격: $${h.price}
+            - 거래량: ${h.volume}
+            - RSI: ${h.rsi}
+            - MACD: ${h.macd}
+            - 볼린저밴드: 상단 $${h.bollingerUpper} / 하단 $${h.bollingerLower}
+            `).join('\n')}
+            
+            현재 가격 정보:
+            - 현재가: $${data.price}
+            - 24시간 변화율: ${data.priceChange24h}%
             
             기술적 지표:
-            - RSI (14): ${rsi}
-            - MACD: ${macd}
-            - 50일 이동평균: $${ma50}
-            - 200일 이동평균: $${ma200}
-            - 볼린저 밴드: 상단 $${bollingerUpper} / 하단 $${bollingerLower}
+            - RSI (14): ${data.rsi}
+            - MACD: ${data.macd}
+            - 50일 이동평균: $${data.ma50}
+            - 200일 이동평균: $${data.ma200}
+            - 볼린저 밴드: 상단 $${data.bollingerUpper} / 하단 $${data.bollingerLower}
             
             거래량 분석:
-            - 현재 거래량: ${volume}
-            - 24시간 거래량 변화: ${volumeChange24h}%
+            - 현재 거래량: ${data.volume}
+            - 24시간 거래량 변화: ${data.volumeChange24h}%
             
             시장 심리:
-            - 시장 감성 지수: ${marketSentiment}
+            - 시장 감성 지수: ${data.marketSentiment}
+
+            추가 기술적 지표:
+            - Stochastic: K(${data.stochastic.k}), D(${data.stochastic.d})
+            - OBV: ${data.obv}
+            
+            차트 패턴:
+            - 도지: ${data.pricePatterns.isDoji}
+            - 모닝스타: ${data.pricePatterns.isMorningStar}
+            - 해머: ${data.pricePatterns.isHammer}
+            
+            시장 심리:
+            - 매수 압력: ${data.marketDepth.buyPressure}
+            - 매도 압력: ${data.marketDepth.sellPressure}
+            
+            선물 시장:
+            - 펀딩비: ${data.fundingRate}%
+            - 미체결약정: ${data.openInterest}
 
             buyTarget는 롱으로 진입하는 가격을 뜻하고
             stopLoss 는 손절가를 말해
@@ -83,21 +133,46 @@ export async function POST(req: Request) {
               }
             }`
         }
-      ]
+      ],
+      temperature: 0.7,
+      max_tokens: 1000
     });
 
-    // GPT 응답을 JSON으로 파싱
+    console.log('GPT response received:', completion.choices[0].message);
+
     const content = completion.choices[0].message.content;
     if (!content) {
       throw new Error('GPT response is empty');
     }
 
-    // 마크다운에서 JSON 부분만 추출
-    const jsonContent = content.replace(/```json\n|\n```/g, '').trim();
-    const advice = JSON.parse(jsonContent) as TradingAdvice;
-    return NextResponse.json(advice);
+    try {
+      // JSON 파싱 시도
+      const jsonContent = content.replace(/```json\n|\n```/g, '').trim();
+      const advice = JSON.parse(jsonContent);
+      
+      // 응답 형식 검증
+      if (!advice.buyTarget || !advice.stopLoss || !advice.takeProfit || !advice.analysis) {
+        throw new Error('Invalid response format');
+      }
+
+      return NextResponse.json(advice);
+    } catch (parseError) {
+      console.error('JSON parsing error:', parseError);
+      throw new Error('GPT response format is invalid');
+    }
+
   } catch (err) {
-    console.error('Trading advice error:', err);
-    return NextResponse.json({ error: 'GPT 응답을 가져오는데 실패했습니다.' }, { status: 500 });
+    const error = err as Error;
+    console.error('Detailed error:', {
+      message: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
+
+    return NextResponse.json({ 
+      error: 'GPT 응답을 가져오는데 실패했습니다.',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    }, { status: 500 });
   }
 } 
