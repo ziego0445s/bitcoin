@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // 이동평균 계산
 export const calculateMA = (prices: number[], period: number): number => {
   if (prices.length < period) return 0;
