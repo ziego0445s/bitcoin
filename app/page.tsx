@@ -107,7 +107,7 @@ export default function Home() {
   const [rsiData, setRsiData] = useState<LineChartData>({ labels: [], datasets: [] });
   const [volumeData, setVolumeData] = useState<BarChartData>({ labels: [], datasets: [] });
   const [tradingAdvice, setTradingAdvice] = useState<TradingAdvice | null>(null);
-  const [lastUpdateTime, setLastUpdateTime] = useState<string>('');
+  const [currentTime, setCurrentTime] = useState<string>('');
   const [isGptResponse, setIsGptResponse] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -213,6 +213,11 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
+  // 시간 업데이트를 위한 useEffect
+  useEffect(() => {
+    setCurrentTime(new Date().toLocaleTimeString());
+  }, []);
+
   // GPT 트레이딩 조언 가져오기
   const fetchTradingAdvice = useCallback(async () => {
     try {
@@ -268,7 +273,6 @@ export default function Home() {
 
       const advice = await response.json();
       setTradingAdvice(advice);
-      setLastUpdateTime(new Date().toLocaleTimeString());
       setIsGptResponse(true);
     } catch (err) {
       console.error('Error fetching trading advice:', err);
@@ -291,7 +295,7 @@ export default function Home() {
             </p>
             <div className="h-6 w-px bg-gray-300" /> {/* 구분선 */}
             <p className="text-sm text-gray-500">
-              Last updated: {new Date().toLocaleTimeString()}
+              Last updated: {currentTime}
             </p>
           </div>
         </div>
@@ -334,7 +338,7 @@ export default function Home() {
           </div>
           
           <div className="mb-4 text-sm text-gray-500">
-            마지막 업데이트: {lastUpdateTime}
+            마지막 업데이트: {currentTime}
           </div>
           
           {tradingAdvice ? (
