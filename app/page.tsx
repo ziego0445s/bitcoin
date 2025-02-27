@@ -28,6 +28,7 @@ import {
   fetchMarketDepth,
   calculateRSI
 } from './utils/indicators';
+import Image from 'next/image';
 
 // Chart.js 등록
 ChartJS.register(
@@ -121,64 +122,56 @@ export default function Home() {
 
   // 30분봉 데이터 가져오기
   useEffect(() => {
-    const fetchKlineData = async () => {
+    const fetchData = async () => {
       try {
-        const response = await axios.get<BinanceKlineData[]>(
-          'https://api.binance.com/api/v3/klines',
-          {
-            params: {
-              symbol: 'BTCUSDT',
-              interval: '30m',
-              limit: 48
-            }
+        const response = await axios.get('https://api.binance.com/api/v3/klines', {
+          params: {
+            symbol: 'BTCUSDT',
+            interval: '30m',
+            limit: 100
           }
-        );
+        });
 
-        const labels = response.data.map((item) => 
-          new Date(item[0]).toLocaleTimeString()
-        );
-        
-        const prices = response.data.map((item) => 
-          parseFloat(item[4])
-        );
-
-        const volumes = response.data.map((item) => 
-          parseFloat(item[5])
-        );
+        const klineData: BinanceKlineData[] = response.data;
+        const times = klineData.map(k => new Date(k[0]).toLocaleTimeString());
+        const prices = klineData.map(k => parseFloat(k[4]));
+        const volumes = klineData.map(k => parseFloat(k[5]));
 
         // RSI 계산
         const rsiValues = calculateRSI(prices);
         
-        // 가격 차트 데이터
-        setChartData({
-          labels,
-          datasets: [
-            {
-              label: 'Bitcoin Price (USDT)',
-              data: prices,
-              borderColor: 'rgb(75, 192, 192)',
-              tension: 0.1
-            }
-          ]
+        // RSI 데이터 디버깅
+        console.log('RSI 데이터 확인:', {
+          rsiLength: rsiValues.length,
+          pricesLength: prices.length,
+          lastRSI: rsiValues[rsiValues.length - 1],
+          times: times.length,
+          lastTime: times[times.length - 1]
         });
 
-        // RSI 차트 데이터
+        setChartData({
+          labels: times,
+          datasets: [{
+            label: 'BTC/USDT',
+            data: prices,
+            borderColor: 'rgb(75, 192, 192)',
+            tension: 0.1
+          }]
+        });
+
         setRsiData({
-          labels,
-          datasets: [
-            {
-              label: 'RSI',
-              data: rsiValues,
-              borderColor: 'rgb(255, 99, 132)',
-              tension: 0.1,
-              fill: false
-            }
-          ]
+          labels: times,
+          datasets: [{
+            label: 'RSI',
+            data: rsiValues,
+            borderColor: 'rgb(255, 99, 132)',
+            tension: 0.1
+          }]
         });
 
         // 거래량 차트 데이터
         setVolumeData({
-          labels,
+          labels: times,
           datasets: [
             {
               label: 'Volume',
@@ -190,12 +183,12 @@ export default function Home() {
         });
 
       } catch (error) {
-        console.error('Error fetching kline data:', error);
+        console.error('Error fetching data:', error);
       }
     };
 
-    fetchKlineData();
-    const interval = setInterval(fetchKlineData, 30000);
+    fetchData();
+    const interval = setInterval(fetchData, 30000);
 
     return () => clearInterval(interval);
   }, []);
@@ -417,7 +410,7 @@ export default function Home() {
             마지막 업데이트: {currentTime}
           </div>
           
-          {tradingAdvice ? (
+          {tradingAdvice && (
             <div className="bg-gradient-to-br from-gray-50 to-white rounded-lg p-8 shadow-inner">
               {/* 가격 정보 카드 그리드 */}
               <div className="space-y-4">
@@ -464,11 +457,41 @@ export default function Home() {
                 </div>
               </div>
             </div>
-          ) : (
-            <div className="text-center text-gray-500 py-6 text-base">
-              분석을 시작하려면 '새로운 분석 받기' 버튼을 클릭하세요
-            </div>
           )}
+        </div>
+
+        {/* 이미지 링크 섹션을 여기로 이동 */}
+        <div className="bg-white rounded-lg shadow-lg p-3 sm:p-6 mb-4">
+          <div className="flex flex-col items-center gap-8">
+            <a 
+              href="https://www.binance.com/activity/referral-entry/CPA?ref=CPA_009IVN1IXF" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="cursor-pointer transition-transform hover:scale-105"
+            >
+              <Image
+                src="/19.png"
+                alt="Trading Image 1"
+                width={800}
+                height={600}
+                className="rounded-lg shadow-lg"
+              />
+            </a>
+            <a 
+              href="https://partner.bitget.com/bg/GVQXD3" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="cursor-pointer transition-transform hover:scale-105"
+            >
+              <Image
+                src="/20.png"
+                alt="Trading Image 2"
+                width={800}
+                height={600}
+                className="rounded-lg shadow-lg"
+              />
+            </a>
+          </div>
         </div>
 
         {/* 차트 그리드 */}
@@ -482,6 +505,10 @@ export default function Home() {
                   options={{
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: {
+                      mode: 'index',
+                      intersect: false,
+                    },
                     plugins: {
                       title: {
                         display: true,
@@ -493,6 +520,10 @@ export default function Home() {
                       },
                       legend: {
                         position: 'top'
+                      },
+                      tooltip: {
+                        mode: 'index',
+                        intersect: false
                       }
                     }
                   }}
@@ -511,6 +542,10 @@ export default function Home() {
                     options={{
                       responsive: true,
                       maintainAspectRatio: false,
+                      interaction: {
+                        mode: 'index',
+                        intersect: false,
+                      },
                       plugins: {
                         title: {
                           display: true,
@@ -519,6 +554,10 @@ export default function Home() {
                             size: 16,
                             weight: 'bold'
                           }
+                        },
+                        tooltip: {
+                          mode: 'index',
+                          intersect: false
                         }
                       },
                       scales: {
@@ -544,6 +583,10 @@ export default function Home() {
                     options={{
                       responsive: true,
                       maintainAspectRatio: false,
+                      interaction: {
+                        mode: 'index',
+                        intersect: false,
+                      },
                       plugins: {
                         title: {
                           display: true,
@@ -552,6 +595,10 @@ export default function Home() {
                             size: 16,
                             weight: 'bold'
                           }
+                        },
+                        tooltip: {
+                          mode: 'index',
+                          intersect: false
                         }
                       }
                     }}
@@ -560,6 +607,17 @@ export default function Home() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Kakao 광고 (하단) */}
+        <div className="flex justify-center mt-8">
+          <ins 
+            className="kakao_ad_area" 
+            style={{ display: "block" }}
+            data-ad-unit="DAN-6jUyeCB09Hw8CGmH"
+            data-ad-width="300"
+            data-ad-height="250"
+          />
         </div>
       </div>
     </main>

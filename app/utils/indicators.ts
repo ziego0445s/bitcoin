@@ -190,21 +190,38 @@ export const fetchMarketDepth = async () => {
   }
 };
 
-// RSI 계산 함수 추가 (page.tsx에서 이동)
+// RSI 계산 함수 수정
 export const calculateRSI = (prices: number[], periods: number = 14) => {
-  const changes = prices.slice(1).map((price, i) => price - prices[i]);
-  const gains = changes.map(change => change > 0 ? change : 0);
-  const losses = changes.map(change => change < 0 ? Math.abs(change) : 0);
+  if (prices.length < periods + 1) {
+    return Array(prices.length).fill(50); // 데이터가 부족할 경우 기본값 50 반환
+  }
 
-  let avgGain = gains.slice(0, periods).reduce((a, b) => a + b) / periods;
-  let avgLoss = losses.slice(0, periods).reduce((a, b) => a + b) / periods;
+  const deltas = prices.slice(1).map((price, i) => price - prices[i]);
+  const gains = deltas.map(d => d > 0 ? d : 0);
+  const losses = deltas.map(d => d < 0 ? -d : 0);
 
-  const rsi = [100 - (100 / (1 + avgGain / avgLoss))];
+  // 첫 번째 평균 계산
+  const avgGain = gains.slice(0, periods).reduce((a, b) => a + b) / periods;
+  const avgLoss = losses.slice(0, periods).reduce((a, b) => a + b) / periods;
 
-  for (let i = periods; i < changes.length; i++) {
-    avgGain = ((avgGain * (periods - 1)) + gains[i]) / periods;
-    avgLoss = ((avgLoss * (periods - 1)) + losses[i]) / periods;
-    rsi.push(100 - (100 / (1 + avgGain / avgLoss)));
+  // 초기 RSI 값 계산
+  const rsi = [50]; // 첫 번째 값은 50으로 설정
+  let lastAvgGain = avgGain;
+  let lastAvgLoss = avgLoss;
+
+  // 모든 가격에 대한 RSI 계산
+  for (let i = 1; i < prices.length; i++) {
+    if (i < periods) {
+      rsi.push(50); // 초기 기간 동안은 50으로 설정
+      continue;
+    }
+
+    // 새로운 값으로 평균 업데이트
+    lastAvgGain = ((lastAvgGain * (periods - 1)) + (gains[i - 1] || 0)) / periods;
+    lastAvgLoss = ((lastAvgLoss * (periods - 1)) + (losses[i - 1] || 0)) / periods;
+
+    const rs = lastAvgGain / (lastAvgLoss || 1); // 0으로 나누기 방지
+    rsi.push(100 - (100 / (1 + rs)));
   }
 
   return rsi;
