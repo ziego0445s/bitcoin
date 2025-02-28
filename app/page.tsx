@@ -156,9 +156,20 @@ export default function Home() {
   const [chartData, setChartData] = useState<LineChartData>({ labels: [], datasets: [] });
   const [rsiData, setRsiData] = useState<LineChartData>({ labels: [], datasets: [] });
   const [volumeData, setVolumeData] = useState<BarChartData>({ labels: [], datasets: [] });
-  const [tradingAdvice, setTradingAdvice] = useState<TradingAdvice | null>(null);
+  const [tradingAdvice, setTradingAdvice] = useState<TradingAdvice | null>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('tradingAdvice');
+      return saved ? JSON.parse(saved) : null;
+    }
+    return null;
+  });
   const [currentTime, setCurrentTime] = useState<string>('');
-  const [isGptResponse, setIsGptResponse] = useState<boolean>(false);
+  const [isGptResponse, setIsGptResponse] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('tradingAdvice') !== null;
+    }
+    return false;
+  });
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [chartOptions, setChartOptions] = useState<ChartOptions>({
     responsive: true,
@@ -387,12 +398,18 @@ export default function Home() {
     }
   }, [lastRequestTime]);
 
+  // tradingAdvice가 변경될 때마다 localStorage에 저장
+  useEffect(() => {
+    if (tradingAdvice) {
+      localStorage.setItem('tradingAdvice', JSON.stringify(tradingAdvice));
+    }
+  }, [tradingAdvice]);
+
   // GPT 트레이딩 조언 가져오기
   const fetchTradingAdvice = useCallback(async () => {
     const now = Date.now();
     const thirtyMinutes = 30 * 60 * 1000;
 
-    // localStorage에서 직접 시간을 확인
     const savedTime = localStorage.getItem('lastRequestTime');
     const lastTime = savedTime ? parseInt(savedTime) : null;
 
@@ -538,8 +555,9 @@ export default function Home() {
         throw new Error(responseData.error);
       }
 
-      // 성공 시 localStorage와 state 모두 업데이트
+      // 성공 시 모든 데이터 저장
       localStorage.setItem('lastRequestTime', now.toString());
+      localStorage.setItem('tradingAdvice', JSON.stringify(responseData));
       setLastRequestTime(now);
       setTradingAdvice(responseData);
       setIsGptResponse(true);
@@ -549,8 +567,9 @@ export default function Home() {
         message: error.message,
         timestamp: new Date().toISOString()
       });
-      setTradingAdvice(null);
-      setIsGptResponse(false);
+      // 에러 발생 시 기존 데이터 유지
+      setTradingAdvice(prevAdvice => prevAdvice);
+      setIsGptResponse(prevState => prevState);
       alert(`분석 중 오류가 발생했습니다: ${error.message}`);
     } finally {
       setIsLoading(false);
