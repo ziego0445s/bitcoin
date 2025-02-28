@@ -215,7 +215,13 @@ export default function Home() {
       }
     }
   });
-  const [lastRequestTime, setLastRequestTime] = useState<number | null>(null);
+  const [lastRequestTime, setLastRequestTime] = useState<number | null>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('lastRequestTime');
+      return saved ? parseInt(saved) : null;
+    }
+    return null;
+  });
 
   // 실시간 가격 가져오기 useEffect를 15분 간격 업데이트로 수정
   useEffect(() => {
@@ -374,14 +380,24 @@ export default function Home() {
     setCurrentTime(new Date().toLocaleTimeString());
   }, []);
 
+  // lastRequestTime이 변경될 때마다 localStorage에 저장
+  useEffect(() => {
+    if (lastRequestTime) {
+      localStorage.setItem('lastRequestTime', lastRequestTime.toString());
+    }
+  }, [lastRequestTime]);
+
   // GPT 트레이딩 조언 가져오기
   const fetchTradingAdvice = useCallback(async () => {
     const now = Date.now();
-    const thirtyMinutes = 30 * 60 * 1000; // 30분을 밀리초로 변환
+    const thirtyMinutes = 30 * 60 * 1000;
 
-    // 마지막 요청 시간 체크
-    if (lastRequestTime && (now - lastRequestTime) < thirtyMinutes) {
-      const remainingTime = Math.ceil((thirtyMinutes - (now - lastRequestTime)) / 60000);
+    // localStorage에서 직접 시간을 확인
+    const savedTime = localStorage.getItem('lastRequestTime');
+    const lastTime = savedTime ? parseInt(savedTime) : null;
+
+    if (lastTime && (now - lastTime) < thirtyMinutes) {
+      const remainingTime = Math.ceil((thirtyMinutes - (now - lastTime)) / 60000);
       alert(`다음 분석은 ${remainingTime}분 후에 가능합니다.`);
       return;
     }
@@ -522,7 +538,8 @@ export default function Home() {
         throw new Error(responseData.error);
       }
 
-      // 분석 성공 시 마지막 요청 시간 업데이트
+      // 성공 시 localStorage와 state 모두 업데이트
+      localStorage.setItem('lastRequestTime', now.toString());
       setLastRequestTime(now);
       setTradingAdvice(responseData);
       setIsGptResponse(true);
@@ -538,7 +555,7 @@ export default function Home() {
     } finally {
       setIsLoading(false);
     }
-  }, [price, chartData, rsiData, volumeData, lastRequestTime]);
+  }, [price, chartData, rsiData, volumeData]);
 
   // 버튼 부분에 남은 시간 표시 추가
   const getRemainingTime = () => {
