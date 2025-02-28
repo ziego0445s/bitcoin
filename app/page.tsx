@@ -121,32 +121,6 @@ interface ChartOptions {
     };
     annotation: {
       annotations: {
-        resistance: {
-          type: 'line';
-          yMin: number;
-          yMax: number;
-          borderColor: string;
-          borderWidth: number;
-          borderDash: number[];
-          label: {
-            enabled: boolean;
-            content: string;
-            position: 'end' | 'start' | 'center';
-          };
-        };
-        support: {
-          type: 'line';
-          yMin: number;
-          yMax: number;
-          borderColor: string;
-          borderWidth: number;
-          borderDash: number[];
-          label: {
-            enabled: boolean;
-            content: string;
-            position: 'end' | 'start' | 'center';
-          };
-        };
         fib0: {
           type: 'line';
           yMin: number;
@@ -159,11 +133,11 @@ interface ChartOptions {
             content: string;
             position: 'start';
             backgroundColor: string;
-            color: string;
-            padding: number;
+            color: 'white';
+            padding: 8;
             font: {
-              size: number;
-              weight?: 'bold' | 'normal' | 'lighter' | 'bolder';
+              size: 13;
+              weight: 'bold';
             };
           };
         };
@@ -179,11 +153,11 @@ interface ChartOptions {
             content: string;
             position: 'start';
             backgroundColor: string;
-            color: string;
-            padding: number;
+            color: 'white';
+            padding: 8;
             font: {
-              size: number;
-              weight?: 'bold' | 'normal' | 'lighter' | 'bolder';
+              size: 13;
+              weight: 'bold';
             };
           };
         };
@@ -199,11 +173,11 @@ interface ChartOptions {
             content: string;
             position: 'start';
             backgroundColor: string;
-            color: string;
-            padding: number;
+            color: 'white';
+            padding: 8;
             font: {
-              size: number;
-              weight?: 'bold' | 'normal' | 'lighter' | 'bolder';
+              size: 13;
+              weight: 'bold';
             };
           };
         };
@@ -219,11 +193,11 @@ interface ChartOptions {
             content: string;
             position: 'start';
             backgroundColor: string;
-            color: string;
-            padding: number;
+            color: 'white';
+            padding: 8;
             font: {
-              size: number;
-              weight?: 'bold' | 'normal' | 'lighter' | 'bolder';
+              size: 13;
+              weight: 'bold';
             };
           };
         };
@@ -239,11 +213,11 @@ interface ChartOptions {
             content: string;
             position: 'start';
             backgroundColor: string;
-            color: string;
-            padding: number;
+            color: 'white';
+            padding: 8;
             font: {
-              size: number;
-              weight?: 'bold' | 'normal' | 'lighter' | 'bolder';
+              size: 13;
+              weight: 'bold';
             };
           };
         };
@@ -259,11 +233,11 @@ interface ChartOptions {
             content: string;
             position: 'start';
             backgroundColor: string;
-            color: string;
-            padding: number;
+            color: 'white';
+            padding: 8;
             font: {
-              size: number;
-              weight?: 'bold' | 'normal' | 'lighter' | 'bolder';
+              size: 13;
+              weight: 'bold';
             };
           };
         };
@@ -279,11 +253,11 @@ interface ChartOptions {
             content: string;
             position: 'start';
             backgroundColor: string;
-            color: string;
-            padding: number;
+            color: 'white';
+            padding: 8;
             font: {
-              size: number;
-              weight?: 'bold' | 'normal' | 'lighter' | 'bolder';
+              size: 13;
+              weight: 'bold';
             };
           };
         };
@@ -299,9 +273,9 @@ interface ChartOptions {
             content: string;
             position: 'start';
             backgroundColor: string;
-            color: string;
-            padding: number;
-            font: { size: number; weight?: 'bold' | 'normal' | 'lighter' | 'bolder'; };
+            color: 'white';
+            padding: 8;
+            font: { size: number; weight: 'bold'; };
           };
         };
         fib1500: {
@@ -316,9 +290,9 @@ interface ChartOptions {
             content: string;
             position: 'start';
             backgroundColor: string;
-            color: string;
-            padding: number;
-            font: { size: number; weight?: 'bold' | 'normal' | 'lighter' | 'bolder'; };
+            color: 'white';
+            padding: 8;
+            font: { size: number; weight: 'bold'; };
           };
         };
         fib1128: {
@@ -333,9 +307,9 @@ interface ChartOptions {
             content: string;
             position: 'start';
             backgroundColor: string;
-            color: string;
-            padding: number;
-            font: { size: number; weight?: 'bold' | 'normal' | 'lighter' | 'bolder'; };
+            color: 'white';
+            padding: 8;
+            font: { size: number; weight: 'bold'; };
           };
         };
         fib1382: {
@@ -350,9 +324,9 @@ interface ChartOptions {
             content: string;
             position: 'start';
             backgroundColor: string;
-            color: string;
-            padding: number;
-            font: { size: number; weight?: 'bold' | 'normal' | 'lighter' | 'bolder'; };
+            color: 'white';
+            padding: 8;
+            font: { size: number; weight: 'bold'; };
           };
         };
       };
@@ -394,32 +368,6 @@ export default function Home() {
       },
       annotation: {
         annotations: {
-          resistance: {
-            type: 'line',
-            yMin: 0,
-            yMax: 0,
-            borderColor: 'rgb(255, 99, 132)',
-            borderWidth: 2,
-            borderDash: [5, 5],
-            label: {
-              enabled: true,
-              content: 'Resistance',
-              position: 'end'
-            }
-          },
-          support: {
-            type: 'line',
-            yMin: 0,
-            yMax: 0,
-            borderColor: 'rgb(75, 192, 192)',
-            borderWidth: 2,
-            borderDash: [5, 5],
-            label: {
-              enabled: true,
-              content: 'Support',
-              position: 'end'
-            }
-          },
           fib0: {
             type: 'line',
             yMin: 0,
@@ -432,9 +380,9 @@ export default function Home() {
               content: '피보나치 0% - $0.00',
               position: 'start',
               backgroundColor: 'rgba(255, 215, 0, 0.9)',
-              color: 'black',
-              padding: 6,
-              font: { size: 12, weight: 'bold' }
+              color: 'white',
+              padding: 8,
+              font: { size: 13, weight: 'bold' }
             }
           },
           fib236: {
@@ -449,9 +397,9 @@ export default function Home() {
               content: '피보나치 23.6% - $0.00',
               position: 'start',
               backgroundColor: 'rgba(255, 182, 193, 0.9)',
-              color: 'black',
-              padding: 6,
-              font: { size: 12, weight: 'bold' }
+              color: 'white',
+              padding: 8,
+              font: { size: 13, weight: 'bold' }
             }
           },
           fib382: {
@@ -466,9 +414,9 @@ export default function Home() {
               content: '피보나치 38.2% - $0.00',
               position: 'start',
               backgroundColor: 'rgba(144, 238, 144, 0.9)',
-              color: 'black',
-              padding: 6,
-              font: { size: 12, weight: 'bold' }
+              color: 'white',
+              padding: 8,
+              font: { size: 13, weight: 'bold' }
             }
           },
           fib500: {
@@ -483,9 +431,9 @@ export default function Home() {
               content: '피보나치 50% - $0.00',
               position: 'start',
               backgroundColor: 'rgba(135, 206, 235, 0.9)',
-              color: 'black',
-              padding: 6,
-              font: { size: 12, weight: 'bold' }
+              color: 'white',
+              padding: 8,
+              font: { size: 13, weight: 'bold' }
             }
           },
           fib618: {
@@ -500,9 +448,9 @@ export default function Home() {
               content: '피보나치 61.8% - $0.00',
               position: 'start',
               backgroundColor: 'rgba(221, 160, 221, 0.9)',
-              color: 'black',
-              padding: 6,
-              font: { size: 12, weight: 'bold' }
+              color: 'white',
+              padding: 8,
+              font: { size: 13, weight: 'bold' }
             }
           },
           fib786: {
@@ -517,9 +465,9 @@ export default function Home() {
               content: '피보나치 78.6% - $0.00',
               position: 'start',
               backgroundColor: 'rgba(255, 165, 0, 0.9)',
-              color: 'black',
-              padding: 6,
-              font: { size: 12, weight: 'bold' }
+              color: 'white',
+              padding: 8,
+              font: { size: 13, weight: 'bold' }
             }
           },
           fib1000: {
@@ -534,9 +482,9 @@ export default function Home() {
               content: '피보나치 100% - $0.00',
               position: 'start',
               backgroundColor: 'rgba(255, 99, 71, 0.9)',
-              color: 'black',
-              padding: 6,
-              font: { size: 12, weight: 'bold' }
+              color: 'white',
+              padding: 8,
+              font: { size: 13, weight: 'bold' }
             }
           },
           fib1236: {
@@ -551,9 +499,9 @@ export default function Home() {
               content: '피보나치 123.6% - $0.00',
               position: 'start',
               backgroundColor: 'rgba(128, 0, 128, 0.9)',
-              color: 'black',
-              padding: 6,
-              font: { size: 12, weight: 'bold' }
+              color: 'white',
+              padding: 8,
+              font: { size: 13, weight: 'bold' }
             }
           },
           fib1500: {
@@ -568,9 +516,9 @@ export default function Home() {
               content: '피보나치 150% - $0.00',
               position: 'start',
               backgroundColor: 'rgba(128, 0, 0, 0.9)',
-              color: 'black',
-              padding: 6,
-              font: { size: 12, weight: 'bold' }
+              color: 'white',
+              padding: 8,
+              font: { size: 13, weight: 'bold' }
             }
           },
           fib1128: {
@@ -585,9 +533,9 @@ export default function Home() {
               content: '피보나치 112.8% - $0.00',
               position: 'start',
               backgroundColor: 'rgba(147, 112, 219, 0.9)',
-              color: 'black',
-              padding: 6,
-              font: { size: 12, weight: 'bold' }
+              color: 'white',
+              padding: 8,
+              font: { size: 13, weight: 'bold' }
             }
           },
           fib1382: {
@@ -602,9 +550,9 @@ export default function Home() {
               content: '피보나치 138.2% - $0.00',
               position: 'start',
               backgroundColor: 'rgba(139, 0, 139, 0.9)',
-              color: 'black',
-              padding: 6,
-              font: { size: 12, weight: 'bold' }
+              color: 'white',
+              padding: 8,
+              font: { size: 13, weight: 'bold' }
             }
           }
         }
@@ -700,48 +648,6 @@ export default function Home() {
             ...prevOptions.plugins,
             annotation: {
               annotations: {
-                resistance: {
-                  ...prevOptions.plugins.annotation.annotations.resistance,
-                  yMin: resistance,
-                  yMax: resistance,
-                  borderColor: 'rgb(255, 99, 132)',
-                  borderWidth: 2,
-                  borderDash: [5, 5],
-                  label: {
-                    enabled: true,
-                    content: `저항선 $${resistance.toFixed(2)}`,
-                    position: 'start',
-                    backgroundColor: 'rgb(255, 99, 132)',
-                    color: 'white',
-                    padding: 4,
-                    font: {
-                      size: 11,
-                      weight: 'bold'
-                    },
-                    display: true
-                  }
-                },
-                support: {
-                  ...prevOptions.plugins.annotation.annotations.support,
-                  yMin: support,
-                  yMax: support,
-                  borderColor: 'rgb(75, 192, 192)',
-                  borderWidth: 2,
-                  borderDash: [5, 5],
-                  label: {
-                    enabled: true,
-                    content: `지지선 $${support.toFixed(2)}`,
-                    position: 'start',
-                    backgroundColor: 'rgb(75, 192, 192)',
-                    color: 'white',
-                    padding: 4,
-                    font: {
-                      size: 11,
-                      weight: 'bold'
-                    },
-                    display: true
-                  }
-                },
                 fib0: {
                   type: 'line',
                   yMin: fibLevels.level0,
@@ -754,9 +660,10 @@ export default function Home() {
                     content: `피보나치 0% - $${fibLevels.level0.toFixed(2)}`,
                     position: 'start',
                     backgroundColor: 'rgba(255, 215, 0, 0.9)',
-                    color: 'black',
-                    padding: 6,
-                    font: { size: 12, weight: 'bold' }
+                    color: 'white',
+                    padding: 8,
+                    font: { size: 13, weight: 'bold' },
+                    display: true
                   }
                 },
                 fib236: {
@@ -771,9 +678,10 @@ export default function Home() {
                     content: `피보나치 23.6% - $${fibLevels.level236.toFixed(2)}`,
                     position: 'start',
                     backgroundColor: 'rgba(255, 182, 193, 0.9)',
-                    color: 'black',
-                    padding: 6,
-                    font: { size: 12, weight: 'bold' }
+                    color: 'white',
+                    padding: 8,
+                    font: { size: 13, weight: 'bold' },
+                    display: true
                   }
                 },
                 fib382: {
@@ -788,9 +696,10 @@ export default function Home() {
                     content: `피보나치 38.2% - $${fibLevels.level382.toFixed(2)}`,
                     position: 'start',
                     backgroundColor: 'rgba(144, 238, 144, 0.9)',
-                    color: 'black',
-                    padding: 6,
-                    font: { size: 12, weight: 'bold' }
+                    color: 'white',
+                    padding: 8,
+                    font: { size: 13, weight: 'bold' },
+                    display: true
                   }
                 },
                 fib500: {
@@ -805,9 +714,10 @@ export default function Home() {
                     content: `피보나치 50% - $${fibLevels.level500.toFixed(2)}`,
                     position: 'start',
                     backgroundColor: 'rgba(135, 206, 235, 0.9)',
-                    color: 'black',
-                    padding: 6,
-                    font: { size: 12, weight: 'bold' }
+                    color: 'white',
+                    padding: 8,
+                    font: { size: 13, weight: 'bold' },
+                    display: true
                   }
                 },
                 fib618: {
@@ -822,9 +732,10 @@ export default function Home() {
                     content: `피보나치 61.8% - $${fibLevels.level618.toFixed(2)}`,
                     position: 'start',
                     backgroundColor: 'rgba(221, 160, 221, 0.9)',
-                    color: 'black',
-                    padding: 6,
-                    font: { size: 12, weight: 'bold' }
+                    color: 'white',
+                    padding: 8,
+                    font: { size: 13, weight: 'bold' },
+                    display: true
                   }
                 },
                 fib786: {
@@ -839,9 +750,10 @@ export default function Home() {
                     content: `피보나치 78.6% - $${fibLevels.level786.toFixed(2)}`,
                     position: 'start',
                     backgroundColor: 'rgba(255, 165, 0, 0.9)',
-                    color: 'black',
-                    padding: 6,
-                    font: { size: 12, weight: 'bold' }
+                    color: 'white',
+                    padding: 8,
+                    font: { size: 13, weight: 'bold' },
+                    display: true
                   }
                 },
                 fib1000: {
@@ -856,9 +768,10 @@ export default function Home() {
                     content: `피보나치 100% - $${fibLevels.level1000.toFixed(2)}`,
                     position: 'start',
                     backgroundColor: 'rgba(255, 99, 71, 0.9)',
-                    color: 'black',
-                    padding: 6,
-                    font: { size: 12, weight: 'bold' }
+                    color: 'white',
+                    padding: 8,
+                    font: { size: 13, weight: 'bold' },
+                    display: true
                   }
                 },
                 fib1236: {
@@ -873,9 +786,10 @@ export default function Home() {
                     content: `피보나치 123.6% - $${fibLevels.level1236.toFixed(2)}`,
                     position: 'start',
                     backgroundColor: 'rgba(128, 0, 128, 0.9)',
-                    color: 'black',
-                    padding: 6,
-                    font: { size: 12, weight: 'bold' }
+                    color: 'white',
+                    padding: 8,
+                    font: { size: 13, weight: 'bold' },
+                    display: true
                   }
                 },
                 fib1500: {
@@ -890,9 +804,10 @@ export default function Home() {
                     content: `피보나치 150% - $${fibLevels.level1500.toFixed(2)}`,
                     position: 'start',
                     backgroundColor: 'rgba(128, 0, 0, 0.9)',
-                    color: 'black',
-                    padding: 6,
-                    font: { size: 12, weight: 'bold' }
+                    color: 'white',
+                    padding: 8,
+                    font: { size: 13, weight: 'bold' },
+                    display: true
                   }
                 },
                 fib1128: {
@@ -907,9 +822,10 @@ export default function Home() {
                     content: `피보나치 112.8% - $${fibLevels.level1128.toFixed(2)}`,
                     position: 'start',
                     backgroundColor: 'rgba(147, 112, 219, 0.9)',
-                    color: 'black',
-                    padding: 6,
-                    font: { size: 12, weight: 'bold' }
+                    color: 'white',
+                    padding: 8,
+                    font: { size: 13, weight: 'bold' },
+                    display: true
                   }
                 },
                 fib1382: {
@@ -924,9 +840,10 @@ export default function Home() {
                     content: `피보나치 138.2% - $${fibLevels.level1382.toFixed(2)}`,
                     position: 'start',
                     backgroundColor: 'rgba(139, 0, 139, 0.9)',
-                    color: 'black',
-                    padding: 6,
-                    font: { size: 12, weight: 'bold' }
+                    color: 'white',
+                    padding: 8,
+                    font: { size: 13, weight: 'bold' },
+                    display: true
                   }
                 }
               }
