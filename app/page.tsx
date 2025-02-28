@@ -13,8 +13,10 @@ import {
   BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  LineController
 } from 'chart.js';
+import annotationPlugin from 'chartjs-plugin-annotation';
 import {
   calculateMA,
   calculateMACD,
@@ -26,7 +28,8 @@ import {
   fetchFundingRate,
   fetchOpenInterest,
   fetchMarketDepth,
-  calculateRSI
+  calculateRSI,
+  calculateSupportResistance
 } from './utils/indicators';
 import Image from 'next/image';
 
@@ -39,7 +42,9 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  LineController,
+  annotationPlugin
 );
 
 // 차트 데이터 타입 정의
@@ -89,6 +94,63 @@ type BinanceKlineData = [
   // ... 나머지 필드는 현재 사용하지 않음
 ];
 
+// 차트 옵션 타입 정의 추가
+interface ChartOptions {
+  responsive: boolean;
+  maintainAspectRatio: boolean;
+  interaction: {
+    mode: 'index' | 'dataset' | 'point' | 'nearest' | 'x' | 'y';
+    intersect: boolean;
+  };
+  plugins: {
+    title: {
+      display: boolean;
+      text: string;
+      font: {
+        size: number;
+        weight: 'bold' | 'normal' | 'lighter' | 'bolder';
+      };
+    };
+    legend: {
+      position: 'top' | 'bottom' | 'left' | 'right';
+    };
+    tooltip: {
+      mode: 'index' | 'dataset' | 'point' | 'nearest' | 'x' | 'y';
+      intersect: boolean;
+    };
+    annotation: {
+      annotations: {
+        resistance: {
+          type: 'line';
+          yMin: number;
+          yMax: number;
+          borderColor: string;
+          borderWidth: number;
+          borderDash: number[];
+          label: {
+            enabled: boolean;
+            content: string;
+            position: 'end' | 'start' | 'center';
+          };
+        };
+        support: {
+          type: 'line';
+          yMin: number;
+          yMax: number;
+          borderColor: string;
+          borderWidth: number;
+          borderDash: number[];
+          label: {
+            enabled: boolean;
+            content: string;
+            position: 'end' | 'start' | 'center';
+          };
+        };
+      };
+    };
+  };
+}
+
 export default function Home() {
   const [price, setPrice] = useState<string>('0');
   const [chartData, setChartData] = useState<LineChartData>({ labels: [], datasets: [] });
@@ -98,6 +160,61 @@ export default function Home() {
   const [currentTime, setCurrentTime] = useState<string>('');
   const [isGptResponse, setIsGptResponse] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [chartOptions, setChartOptions] = useState<ChartOptions>({
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+      mode: 'index',
+      intersect: false,
+    },
+    plugins: {
+      title: {
+        display: true,
+        text: 'Bitcoin 30-Minute Price Chart',
+        font: {
+          size: 16,
+          weight: 'bold' as const
+        }
+      },
+      legend: {
+        position: 'top'
+      },
+      tooltip: {
+        mode: 'index',
+        intersect: false
+      },
+      annotation: {
+        annotations: {
+          resistance: {
+            type: 'line',
+            yMin: 0,
+            yMax: 0,
+            borderColor: 'rgb(255, 99, 132)',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            label: {
+              enabled: true,
+              content: 'Resistance',
+              position: 'end'
+            }
+          },
+          support: {
+            type: 'line',
+            yMin: 0,
+            yMax: 0,
+            borderColor: 'rgb(75, 192, 192)',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            label: {
+              enabled: true,
+              content: 'Support',
+              position: 'end'
+            }
+          }
+        }
+      }
+    }
+  });
 
   // 실시간 가격 가져오기 useEffect를 15분 간격 업데이트로 수정
   useEffect(() => {
@@ -149,6 +266,10 @@ export default function Home() {
           lastTime: times[times.length - 1]
         });
 
+        // 저항선과 지지선 계산
+        const { support, resistance } = calculateSupportResistance(prices);
+
+        // 차트 데이터 업데이트
         setChartData({
           labels: times,
           datasets: [{
@@ -158,6 +279,60 @@ export default function Home() {
             tension: 0.1
           }]
         });
+
+        // 차트 옵션 업데이트
+        setChartOptions(prevOptions => ({
+          ...prevOptions,
+          plugins: {
+            ...prevOptions.plugins,
+            annotation: {
+              annotations: {
+                resistance: {
+                  ...prevOptions.plugins.annotation.annotations.resistance,
+                  yMin: resistance,
+                  yMax: resistance,
+                  borderColor: 'rgb(255, 99, 132)',
+                  borderWidth: 2,
+                  borderDash: [5, 5],
+                  label: {
+                    enabled: true,
+                    content: `저항선 $${resistance.toFixed(2)}`,
+                    position: 'start',
+                    backgroundColor: 'rgb(255, 99, 132)',
+                    color: 'white',
+                    padding: 4,
+                    font: {
+                      size: 11,
+                      weight: 'bold'
+                    },
+                    display: true
+                  }
+                },
+                support: {
+                  ...prevOptions.plugins.annotation.annotations.support,
+                  yMin: support,
+                  yMax: support,
+                  borderColor: 'rgb(75, 192, 192)',
+                  borderWidth: 2,
+                  borderDash: [5, 5],
+                  label: {
+                    enabled: true,
+                    content: `지지선 $${support.toFixed(2)}`,
+                    position: 'start',
+                    backgroundColor: 'rgb(75, 192, 192)',
+                    color: 'white',
+                    padding: 4,
+                    font: {
+                      size: 11,
+                      weight: 'bold'
+                    },
+                    display: true
+                  }
+                }
+              }
+            }
+          }
+        }));
 
         setRsiData({
           labels: times,
@@ -502,31 +677,7 @@ export default function Home() {
               {chartData.datasets.length > 0 && (
                 <Line
                   data={chartData}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                      mode: 'index',
-                      intersect: false,
-                    },
-                    plugins: {
-                      title: {
-                        display: true,
-                        text: 'Bitcoin 30-Minute Price Chart',
-                        font: {
-                          size: 16,
-                          weight: 'bold'
-                        }
-                      },
-                      legend: {
-                        position: 'top'
-                      },
-                      tooltip: {
-                        mode: 'index',
-                        intersect: false
-                      }
-                    }
-                  }}
+                  options={chartOptions}
                 />
               )}
             </div>
@@ -552,7 +703,7 @@ export default function Home() {
                           text: 'RSI Indicator (14)',
                           font: {
                             size: 16,
-                            weight: 'bold'
+                            weight: 'bold' as const
                           }
                         },
                         tooltip: {
@@ -593,7 +744,7 @@ export default function Home() {
                           text: 'Trading Volume',
                           font: {
                             size: 16,
-                            weight: 'bold'
+                            weight: 'bold' as const
                           }
                         },
                         tooltip: {

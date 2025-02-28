@@ -225,4 +225,26 @@ export const calculateRSI = (prices: number[], periods: number = 14) => {
   }
 
   return rsi;
+};
+
+// 저항선과 지지선 계산 함수 추가
+export const calculateSupportResistance = (prices: number[]) => {
+  if (prices.length < 10) return { support: 0, resistance: 0 };
+
+  // 최근 100개의 가격 데이터 사용
+  const recentPrices = prices.slice(-100);
+  
+  // 피봇 포인트 계산을 위한 고가, 저가, 종가
+  const high = Math.max(...recentPrices);
+  const low = Math.min(...recentPrices);
+  const close = recentPrices[recentPrices.length - 1];
+  
+  // 피봇 포인트 계산
+  const pivot = (high + low + close) / 3;
+  
+  // 저항선과 지지선 계산
+  const resistance = pivot + (pivot - low);
+  const support = pivot - (high - pivot);
+  
+  return { support, resistance };
 }; 
