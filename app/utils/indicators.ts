@@ -247,4 +247,27 @@ export const calculateSupportResistance = (prices: number[]) => {
   const support = pivot - (high - pivot);
   
   return { support, resistance };
+};
+
+// 피보나치 레벨 계산 함수 수정
+export const calculateFibonacciLevels = (prices: number[]) => {
+  if (prices.length < 2) return null;
+
+  const high = Math.max(...prices);
+  const low = Math.min(...prices);
+  const diff = high - low;
+
+  return {
+    level0: high,                    // 0% - 상단
+    level236: high - diff * 0.236,   // 23.6%
+    level382: high - diff * 0.382,   // 38.2%
+    level500: high - diff * 0.5,     // 50%
+    level618: high - diff * 0.618,   // 61.8%
+    level786: high - diff * 0.786,   // 78.6%
+    level1000: low,                  // 100% - 하단
+    level1128: low - diff * 0.128,   // 112.8%
+    level1236: low - diff * 0.236,   // 123.6%
+    level1382: low - diff * 0.382,   // 138.2%
+    level1500: low - diff * 0.5      // 150%
+  };
 }; 

@@ -29,7 +29,8 @@ import {
   fetchOpenInterest,
   fetchMarketDepth,
   calculateRSI,
-  calculateSupportResistance
+  calculateSupportResistance,
+  calculateFibonacciLevels
 } from './utils/indicators';
 import Image from 'next/image';
 
@@ -146,6 +147,214 @@ interface ChartOptions {
             position: 'end' | 'start' | 'center';
           };
         };
+        fib0: {
+          type: 'line';
+          yMin: number;
+          yMax: number;
+          borderColor: string;
+          borderWidth: number;
+          borderDash: number[];
+          label: {
+            enabled: boolean;
+            content: string;
+            position: 'start';
+            backgroundColor: string;
+            color: string;
+            padding: number;
+            font: {
+              size: number;
+              weight?: 'bold' | 'normal' | 'lighter' | 'bolder';
+            };
+          };
+        };
+        fib236: {
+          type: 'line';
+          yMin: number;
+          yMax: number;
+          borderColor: string;
+          borderWidth: number;
+          borderDash: number[];
+          label: {
+            enabled: boolean;
+            content: string;
+            position: 'start';
+            backgroundColor: string;
+            color: string;
+            padding: number;
+            font: {
+              size: number;
+              weight?: 'bold' | 'normal' | 'lighter' | 'bolder';
+            };
+          };
+        };
+        fib382: {
+          type: 'line';
+          yMin: number;
+          yMax: number;
+          borderColor: string;
+          borderWidth: number;
+          borderDash: number[];
+          label: {
+            enabled: boolean;
+            content: string;
+            position: 'start';
+            backgroundColor: string;
+            color: string;
+            padding: number;
+            font: {
+              size: number;
+              weight?: 'bold' | 'normal' | 'lighter' | 'bolder';
+            };
+          };
+        };
+        fib500: {
+          type: 'line';
+          yMin: number;
+          yMax: number;
+          borderColor: string;
+          borderWidth: number;
+          borderDash: number[];
+          label: {
+            enabled: boolean;
+            content: string;
+            position: 'start';
+            backgroundColor: string;
+            color: string;
+            padding: number;
+            font: {
+              size: number;
+              weight?: 'bold' | 'normal' | 'lighter' | 'bolder';
+            };
+          };
+        };
+        fib618: {
+          type: 'line';
+          yMin: number;
+          yMax: number;
+          borderColor: string;
+          borderWidth: number;
+          borderDash: number[];
+          label: {
+            enabled: boolean;
+            content: string;
+            position: 'start';
+            backgroundColor: string;
+            color: string;
+            padding: number;
+            font: {
+              size: number;
+              weight?: 'bold' | 'normal' | 'lighter' | 'bolder';
+            };
+          };
+        };
+        fib786: {
+          type: 'line';
+          yMin: number;
+          yMax: number;
+          borderColor: string;
+          borderWidth: number;
+          borderDash: number[];
+          label: {
+            enabled: boolean;
+            content: string;
+            position: 'start';
+            backgroundColor: string;
+            color: string;
+            padding: number;
+            font: {
+              size: number;
+              weight?: 'bold' | 'normal' | 'lighter' | 'bolder';
+            };
+          };
+        };
+        fib1000: {
+          type: 'line';
+          yMin: number;
+          yMax: number;
+          borderColor: string;
+          borderWidth: number;
+          borderDash: number[];
+          label: {
+            enabled: boolean;
+            content: string;
+            position: 'start';
+            backgroundColor: string;
+            color: string;
+            padding: number;
+            font: {
+              size: number;
+              weight?: 'bold' | 'normal' | 'lighter' | 'bolder';
+            };
+          };
+        };
+        fib1236: {
+          type: 'line';
+          yMin: number;
+          yMax: number;
+          borderColor: string;
+          borderWidth: number;
+          borderDash: number[];
+          label: {
+            enabled: boolean;
+            content: string;
+            position: 'start';
+            backgroundColor: string;
+            color: string;
+            padding: number;
+            font: { size: number; weight?: 'bold' | 'normal' | 'lighter' | 'bolder'; };
+          };
+        };
+        fib1500: {
+          type: 'line';
+          yMin: number;
+          yMax: number;
+          borderColor: string;
+          borderWidth: number;
+          borderDash: number[];
+          label: {
+            enabled: boolean;
+            content: string;
+            position: 'start';
+            backgroundColor: string;
+            color: string;
+            padding: number;
+            font: { size: number; weight?: 'bold' | 'normal' | 'lighter' | 'bolder'; };
+          };
+        };
+        fib1128: {
+          type: 'line';
+          yMin: number;
+          yMax: number;
+          borderColor: string;
+          borderWidth: number;
+          borderDash: number[];
+          label: {
+            enabled: boolean;
+            content: string;
+            position: 'start';
+            backgroundColor: string;
+            color: string;
+            padding: number;
+            font: { size: number; weight?: 'bold' | 'normal' | 'lighter' | 'bolder'; };
+          };
+        };
+        fib1382: {
+          type: 'line';
+          yMin: number;
+          yMax: number;
+          borderColor: string;
+          borderWidth: number;
+          borderDash: number[];
+          label: {
+            enabled: boolean;
+            content: string;
+            position: 'start';
+            backgroundColor: string;
+            color: string;
+            padding: number;
+            font: { size: number; weight?: 'bold' | 'normal' | 'lighter' | 'bolder'; };
+          };
+        };
       };
     };
   };
@@ -156,20 +365,9 @@ export default function Home() {
   const [chartData, setChartData] = useState<LineChartData>({ labels: [], datasets: [] });
   const [rsiData, setRsiData] = useState<LineChartData>({ labels: [], datasets: [] });
   const [volumeData, setVolumeData] = useState<BarChartData>({ labels: [], datasets: [] });
-  const [tradingAdvice, setTradingAdvice] = useState<TradingAdvice | null>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('tradingAdvice');
-      return saved ? JSON.parse(saved) : null;
-    }
-    return null;
-  });
+  const [tradingAdvice, setTradingAdvice] = useState<TradingAdvice | null>(null);
   const [currentTime, setCurrentTime] = useState<string>('');
-  const [isGptResponse, setIsGptResponse] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('tradingAdvice') !== null;
-    }
-    return false;
-  });
+  const [isGptResponse, setIsGptResponse] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [chartOptions, setChartOptions] = useState<ChartOptions>({
     responsive: true,
@@ -221,18 +419,200 @@ export default function Home() {
               content: 'Support',
               position: 'end'
             }
+          },
+          fib0: {
+            type: 'line',
+            yMin: 0,
+            yMax: 0,
+            borderColor: 'rgba(255, 215, 0, 0.8)',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            label: {
+              enabled: true,
+              content: '피보나치 0% - $0.00',
+              position: 'start',
+              backgroundColor: 'rgba(255, 215, 0, 0.9)',
+              color: 'black',
+              padding: 6,
+              font: { size: 12, weight: 'bold' }
+            }
+          },
+          fib236: {
+            type: 'line',
+            yMin: 0,
+            yMax: 0,
+            borderColor: 'rgba(255, 182, 193, 0.8)',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            label: {
+              enabled: true,
+              content: '피보나치 23.6% - $0.00',
+              position: 'start',
+              backgroundColor: 'rgba(255, 182, 193, 0.9)',
+              color: 'black',
+              padding: 6,
+              font: { size: 12, weight: 'bold' }
+            }
+          },
+          fib382: {
+            type: 'line',
+            yMin: 0,
+            yMax: 0,
+            borderColor: 'rgba(144, 238, 144, 0.8)',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            label: {
+              enabled: true,
+              content: '피보나치 38.2% - $0.00',
+              position: 'start',
+              backgroundColor: 'rgba(144, 238, 144, 0.9)',
+              color: 'black',
+              padding: 6,
+              font: { size: 12, weight: 'bold' }
+            }
+          },
+          fib500: {
+            type: 'line',
+            yMin: 0,
+            yMax: 0,
+            borderColor: 'rgba(135, 206, 235, 0.8)',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            label: {
+              enabled: true,
+              content: '피보나치 50% - $0.00',
+              position: 'start',
+              backgroundColor: 'rgba(135, 206, 235, 0.9)',
+              color: 'black',
+              padding: 6,
+              font: { size: 12, weight: 'bold' }
+            }
+          },
+          fib618: {
+            type: 'line',
+            yMin: 0,
+            yMax: 0,
+            borderColor: 'rgba(221, 160, 221, 0.8)',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            label: {
+              enabled: true,
+              content: '피보나치 61.8% - $0.00',
+              position: 'start',
+              backgroundColor: 'rgba(221, 160, 221, 0.9)',
+              color: 'black',
+              padding: 6,
+              font: { size: 12, weight: 'bold' }
+            }
+          },
+          fib786: {
+            type: 'line',
+            yMin: 0,
+            yMax: 0,
+            borderColor: 'rgba(255, 165, 0, 0.8)',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            label: {
+              enabled: true,
+              content: '피보나치 78.6% - $0.00',
+              position: 'start',
+              backgroundColor: 'rgba(255, 165, 0, 0.9)',
+              color: 'black',
+              padding: 6,
+              font: { size: 12, weight: 'bold' }
+            }
+          },
+          fib1000: {
+            type: 'line',
+            yMin: 0,
+            yMax: 0,
+            borderColor: 'rgba(255, 99, 71, 0.8)',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            label: {
+              enabled: true,
+              content: '피보나치 100% - $0.00',
+              position: 'start',
+              backgroundColor: 'rgba(255, 99, 71, 0.9)',
+              color: 'black',
+              padding: 6,
+              font: { size: 12, weight: 'bold' }
+            }
+          },
+          fib1236: {
+            type: 'line',
+            yMin: 0,
+            yMax: 0,
+            borderColor: 'rgba(128, 0, 128, 0.8)',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            label: {
+              enabled: true,
+              content: '피보나치 123.6% - $0.00',
+              position: 'start',
+              backgroundColor: 'rgba(128, 0, 128, 0.9)',
+              color: 'black',
+              padding: 6,
+              font: { size: 12, weight: 'bold' }
+            }
+          },
+          fib1500: {
+            type: 'line',
+            yMin: 0,
+            yMax: 0,
+            borderColor: 'rgba(128, 0, 0, 0.8)',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            label: {
+              enabled: true,
+              content: '피보나치 150% - $0.00',
+              position: 'start',
+              backgroundColor: 'rgba(128, 0, 0, 0.9)',
+              color: 'black',
+              padding: 6,
+              font: { size: 12, weight: 'bold' }
+            }
+          },
+          fib1128: {
+            type: 'line',
+            yMin: 0,
+            yMax: 0,
+            borderColor: 'rgba(147, 112, 219, 0.8)',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            label: {
+              enabled: true,
+              content: '피보나치 112.8% - $0.00',
+              position: 'start',
+              backgroundColor: 'rgba(147, 112, 219, 0.9)',
+              color: 'black',
+              padding: 6,
+              font: { size: 12, weight: 'bold' }
+            }
+          },
+          fib1382: {
+            type: 'line',
+            yMin: 0,
+            yMax: 0,
+            borderColor: 'rgba(139, 0, 139, 0.8)',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            label: {
+              enabled: true,
+              content: '피보나치 138.2% - $0.00',
+              position: 'start',
+              backgroundColor: 'rgba(139, 0, 139, 0.9)',
+              color: 'black',
+              padding: 6,
+              font: { size: 12, weight: 'bold' }
+            }
           }
         }
       }
     }
   });
-  const [lastRequestTime, setLastRequestTime] = useState<number | null>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('lastRequestTime');
-      return saved ? parseInt(saved) : null;
-    }
-    return null;
-  });
+  const [lastRequestTime, setLastRequestTime] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // 실시간 가격 가져오기 useEffect를 15분 간격 업데이트로 수정
   useEffect(() => {
@@ -298,6 +678,21 @@ export default function Home() {
           }]
         });
 
+        // 피보나치 레벨 계산
+        const fibLevels = calculateFibonacciLevels(prices) || {
+          level0: 0,
+          level236: 0,
+          level382: 0,
+          level500: 0,
+          level618: 0,
+          level786: 0,
+          level1000: 0,
+          level1128: 0,
+          level1236: 0,
+          level1382: 0,
+          level1500: 0
+        };
+
         // 차트 옵션 업데이트
         setChartOptions(prevOptions => ({
           ...prevOptions,
@@ -345,6 +740,193 @@ export default function Home() {
                       weight: 'bold'
                     },
                     display: true
+                  }
+                },
+                fib0: {
+                  type: 'line',
+                  yMin: fibLevels.level0,
+                  yMax: fibLevels.level0,
+                  borderColor: 'rgba(255, 215, 0, 0.8)',
+                  borderWidth: 2,
+                  borderDash: [5, 5],
+                  label: {
+                    enabled: true,
+                    content: `피보나치 0% - $${fibLevels.level0.toFixed(2)}`,
+                    position: 'start',
+                    backgroundColor: 'rgba(255, 215, 0, 0.9)',
+                    color: 'black',
+                    padding: 6,
+                    font: { size: 12, weight: 'bold' }
+                  }
+                },
+                fib236: {
+                  type: 'line',
+                  yMin: fibLevels.level236,
+                  yMax: fibLevels.level236,
+                  borderColor: 'rgba(255, 182, 193, 0.8)',
+                  borderWidth: 2,
+                  borderDash: [5, 5],
+                  label: {
+                    enabled: true,
+                    content: `피보나치 23.6% - $${fibLevels.level236.toFixed(2)}`,
+                    position: 'start',
+                    backgroundColor: 'rgba(255, 182, 193, 0.9)',
+                    color: 'black',
+                    padding: 6,
+                    font: { size: 12, weight: 'bold' }
+                  }
+                },
+                fib382: {
+                  type: 'line',
+                  yMin: fibLevels.level382,
+                  yMax: fibLevels.level382,
+                  borderColor: 'rgba(144, 238, 144, 0.8)',
+                  borderWidth: 2,
+                  borderDash: [5, 5],
+                  label: {
+                    enabled: true,
+                    content: `피보나치 38.2% - $${fibLevels.level382.toFixed(2)}`,
+                    position: 'start',
+                    backgroundColor: 'rgba(144, 238, 144, 0.9)',
+                    color: 'black',
+                    padding: 6,
+                    font: { size: 12, weight: 'bold' }
+                  }
+                },
+                fib500: {
+                  type: 'line',
+                  yMin: fibLevels.level500,
+                  yMax: fibLevels.level500,
+                  borderColor: 'rgba(135, 206, 235, 0.8)',
+                  borderWidth: 2,
+                  borderDash: [5, 5],
+                  label: {
+                    enabled: true,
+                    content: `피보나치 50% - $${fibLevels.level500.toFixed(2)}`,
+                    position: 'start',
+                    backgroundColor: 'rgba(135, 206, 235, 0.9)',
+                    color: 'black',
+                    padding: 6,
+                    font: { size: 12, weight: 'bold' }
+                  }
+                },
+                fib618: {
+                  type: 'line',
+                  yMin: fibLevels.level618,
+                  yMax: fibLevels.level618,
+                  borderColor: 'rgba(221, 160, 221, 0.8)',
+                  borderWidth: 2,
+                  borderDash: [5, 5],
+                  label: {
+                    enabled: true,
+                    content: `피보나치 61.8% - $${fibLevels.level618.toFixed(2)}`,
+                    position: 'start',
+                    backgroundColor: 'rgba(221, 160, 221, 0.9)',
+                    color: 'black',
+                    padding: 6,
+                    font: { size: 12, weight: 'bold' }
+                  }
+                },
+                fib786: {
+                  type: 'line',
+                  yMin: fibLevels.level786,
+                  yMax: fibLevels.level786,
+                  borderColor: 'rgba(255, 165, 0, 0.8)',
+                  borderWidth: 2,
+                  borderDash: [5, 5],
+                  label: {
+                    enabled: true,
+                    content: `피보나치 78.6% - $${fibLevels.level786.toFixed(2)}`,
+                    position: 'start',
+                    backgroundColor: 'rgba(255, 165, 0, 0.9)',
+                    color: 'black',
+                    padding: 6,
+                    font: { size: 12, weight: 'bold' }
+                  }
+                },
+                fib1000: {
+                  type: 'line',
+                  yMin: fibLevels.level1000,
+                  yMax: fibLevels.level1000,
+                  borderColor: 'rgba(255, 99, 71, 0.8)',
+                  borderWidth: 2,
+                  borderDash: [5, 5],
+                  label: {
+                    enabled: true,
+                    content: `피보나치 100% - $${fibLevels.level1000.toFixed(2)}`,
+                    position: 'start',
+                    backgroundColor: 'rgba(255, 99, 71, 0.9)',
+                    color: 'black',
+                    padding: 6,
+                    font: { size: 12, weight: 'bold' }
+                  }
+                },
+                fib1236: {
+                  type: 'line',
+                  yMin: fibLevels.level1236,
+                  yMax: fibLevels.level1236,
+                  borderColor: 'rgba(128, 0, 128, 0.8)',
+                  borderWidth: 2,
+                  borderDash: [5, 5],
+                  label: {
+                    enabled: true,
+                    content: `피보나치 123.6% - $${fibLevels.level1236.toFixed(2)}`,
+                    position: 'start',
+                    backgroundColor: 'rgba(128, 0, 128, 0.9)',
+                    color: 'black',
+                    padding: 6,
+                    font: { size: 12, weight: 'bold' }
+                  }
+                },
+                fib1500: {
+                  type: 'line',
+                  yMin: fibLevels.level1500,
+                  yMax: fibLevels.level1500,
+                  borderColor: 'rgba(128, 0, 0, 0.8)',
+                  borderWidth: 2,
+                  borderDash: [5, 5],
+                  label: {
+                    enabled: true,
+                    content: `피보나치 150% - $${fibLevels.level1500.toFixed(2)}`,
+                    position: 'start',
+                    backgroundColor: 'rgba(128, 0, 0, 0.9)',
+                    color: 'black',
+                    padding: 6,
+                    font: { size: 12, weight: 'bold' }
+                  }
+                },
+                fib1128: {
+                  type: 'line',
+                  yMin: fibLevels.level1128,
+                  yMax: fibLevels.level1128,
+                  borderColor: 'rgba(147, 112, 219, 0.8)',
+                  borderWidth: 2,
+                  borderDash: [5, 5],
+                  label: {
+                    enabled: true,
+                    content: `피보나치 112.8% - $${fibLevels.level1128.toFixed(2)}`,
+                    position: 'start',
+                    backgroundColor: 'rgba(147, 112, 219, 0.9)',
+                    color: 'black',
+                    padding: 6,
+                    font: { size: 12, weight: 'bold' }
+                  }
+                },
+                fib1382: {
+                  type: 'line',
+                  yMin: fibLevels.level1382,
+                  yMax: fibLevels.level1382,
+                  borderColor: 'rgba(139, 0, 139, 0.8)',
+                  borderWidth: 2,
+                  borderDash: [5, 5],
+                  label: {
+                    enabled: true,
+                    content: `피보나치 138.2% - $${fibLevels.level1382.toFixed(2)}`,
+                    position: 'start',
+                    backgroundColor: 'rgba(139, 0, 139, 0.9)',
+                    color: 'black',
+                    padding: 6,
+                    font: { size: 12, weight: 'bold' }
                   }
                 }
               }
@@ -407,21 +989,22 @@ export default function Home() {
 
   // GPT 트레이딩 조언 가져오기
   const fetchTradingAdvice = useCallback(async () => {
-    const now = Date.now();
-    const thirtyMinutes = 30 * 60 * 1000;
-
-    const savedTime = localStorage.getItem('lastRequestTime');
-    const lastTime = savedTime ? parseInt(savedTime) : null;
-
-    if (lastTime && (now - lastTime) < thirtyMinutes) {
-      const remainingTime = Math.ceil((thirtyMinutes - (now - lastTime)) / 60000);
-      alert(`다음 분석은 ${remainingTime}분 후에 가능합니다.`);
-      return;
-    }
-
     try {
       setIsLoading(true);
-      
+      setError(null); // 요청 시작할 때 에러 초기화
+
+      const now = Date.now();
+      const thirtyMinutes = 30 * 60 * 1000;
+
+      const savedTime = localStorage.getItem('lastRequestTime');
+      const lastTime = savedTime ? parseInt(savedTime) : null;
+
+      if (lastTime && (now - lastTime) < thirtyMinutes) {
+        const remainingTime = Math.ceil((thirtyMinutes - (now - lastTime)) / 60000);
+        alert(`다음 분석은 ${remainingTime}분 후에 가능합니다.`);
+        return;
+      }
+
       // 24시간 데이터 준비 (30분봉 48개)
       const last48Prices = chartData.datasets[0]?.data || [];
       const last48Times = chartData.labels || [];
@@ -490,6 +1073,21 @@ export default function Home() {
       // 시장 심리 분석
       const marketDepth = await fetchMarketDepth();
       
+      // 피보나치 레벨 계산
+      const fibLevels = calculateFibonacciLevels(prices) || {
+        level0: 0,
+        level236: 0,
+        level382: 0,
+        level500: 0,
+        level618: 0,
+        level786: 0,
+        level1000: 0,
+        level1128: 0,
+        level1236: 0,
+        level1382: 0,
+        level1500: 0
+      };
+
       console.log('API request payload:', {
         price: currentPrice,
         rsi: currentRsi.toFixed(2),
@@ -510,7 +1108,20 @@ export default function Home() {
         pricePatterns: patterns,
         marketDepth,
         fundingRate,
-        openInterest
+        openInterest,
+        fibonacciLevels: {
+          level0: fibLevels.level0.toFixed(2),
+          level236: fibLevels.level236.toFixed(2),
+          level382: fibLevels.level382.toFixed(2),
+          level500: fibLevels.level500.toFixed(2),
+          level618: fibLevels.level618.toFixed(2),
+          level786: fibLevels.level786.toFixed(2),
+          level1000: fibLevels.level1000.toFixed(2),
+          level1128: fibLevels.level1128.toFixed(2),
+          level1236: fibLevels.level1236.toFixed(2),
+          level1382: fibLevels.level1382.toFixed(2),
+          level1500: fibLevels.level1500.toFixed(2)
+        }
       });
 
       const response = await fetch('/api/trading-advice', {
@@ -539,38 +1150,45 @@ export default function Home() {
           marketDepth,
           fundingRate,
           openInterest,
+          fibonacciLevels: {
+            level0: fibLevels.level0.toFixed(2),
+            level236: fibLevels.level236.toFixed(2),
+            level382: fibLevels.level382.toFixed(2),
+            level500: fibLevels.level500.toFixed(2),
+            level618: fibLevels.level618.toFixed(2),
+            level786: fibLevels.level786.toFixed(2),
+            level1000: fibLevels.level1000.toFixed(2),
+            level1128: fibLevels.level1128.toFixed(2),
+            level1236: fibLevels.level1236.toFixed(2),
+            level1382: fibLevels.level1382.toFixed(2),
+            level1500: fibLevels.level1500.toFixed(2)
+          },
           historicalData
         }),
       });
 
       console.log('API response status:', response.status);
 
-      const responseData = await response.json();
-      
       if (!response.ok) {
-        throw new Error(responseData.details || responseData.error || 'API 요청에 실패했습니다.');
+        throw new Error('요청에 실패했습니다. 잠시 후 다시 시도해주세요.');
       }
 
-      if (responseData.error) {
-        throw new Error(responseData.error);
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
       }
 
       // 성공 시 모든 데이터 저장
       localStorage.setItem('lastRequestTime', now.toString());
-      localStorage.setItem('tradingAdvice', JSON.stringify(responseData));
+      localStorage.setItem('tradingAdvice', JSON.stringify(data));
       setLastRequestTime(now);
-      setTradingAdvice(responseData);
+      setTradingAdvice(data);
       setIsGptResponse(true);
+
     } catch (err) {
-      const error = err as Error;
-      console.error('Trading advice error:', {
-        message: error.message,
-        timestamp: new Date().toISOString()
-      });
-      // 에러 발생 시 기존 데이터 유지
-      setTradingAdvice(prevAdvice => prevAdvice);
-      setIsGptResponse(prevState => prevState);
-      alert(`분석 중 오류가 발생했습니다: ${error.message}`);
+      setError(err instanceof Error ? err.message : '요청에 실패했습니다. 잠시 후 다시 시도해주세요.');
+      setIsGptResponse(false);
     } finally {
       setIsLoading(false);
     }
@@ -605,6 +1223,22 @@ export default function Home() {
     const remainingTime = getRemainingTime();
     return remainingTime !== null;
   };
+
+  // localStorage 초기화를 위한 useEffect 추가
+  useEffect(() => {
+    // 클라이언트 사이드에서만 localStorage 접근
+    const savedAdvice = localStorage.getItem('tradingAdvice');
+    const savedTime = localStorage.getItem('lastRequestTime');
+
+    if (savedAdvice) {
+      setTradingAdvice(JSON.parse(savedAdvice));
+      setIsGptResponse(true);
+    }
+
+    if (savedTime) {
+      setLastRequestTime(parseInt(savedTime));
+    }
+  }, []); // 컴포넌트 마운트 시 한 번만 실행
 
   return (
     <main className="min-h-screen bg-gray-50 p-2 sm:p-8">
@@ -660,26 +1294,38 @@ export default function Home() {
             </button>
           </div>
           
+          {error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600">{error}</p>
+            </div>
+          )}
+          
           <div className="mb-4 text-sm text-gray-500">
             마지막 업데이트: {currentTime}
           </div>
           
-          {tradingAdvice && (
+          {tradingAdvice && !error && (
             <div className="bg-gradient-to-br from-gray-50 to-white rounded-lg p-8 shadow-inner">
               {/* 가격 정보 카드 그리드 */}
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
                   <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
                     <h3 className="text-sm font-semibold text-blue-500">매수 목표가</h3>
-                    <p className="text-xl sm:text-2xl font-bold text-blue-700">{tradingAdvice.buyTarget}</p>
+                    <p className="text-xl sm:text-2xl font-bold text-blue-700">
+                      {typeof tradingAdvice.buyTarget === 'string' ? tradingAdvice.buyTarget : JSON.stringify(tradingAdvice.buyTarget)}
+                    </p>
                   </div>
                   <div className="bg-red-50 rounded-lg p-3 border border-red-100">
                     <h3 className="text-sm font-semibold text-red-500">손절가</h3>
-                    <p className="text-xl sm:text-2xl font-bold text-red-700">{tradingAdvice.stopLoss}</p>
+                    <p className="text-xl sm:text-2xl font-bold text-red-700">
+                      {typeof tradingAdvice.stopLoss === 'string' ? tradingAdvice.stopLoss : JSON.stringify(tradingAdvice.stopLoss)}
+                    </p>
                   </div>
                   <div className="bg-green-50 rounded-lg p-3 border border-green-100">
                     <h3 className="text-sm font-semibold text-green-500">익절가</h3>
-                    <p className="text-xl sm:text-2xl font-bold text-green-700">{tradingAdvice.takeProfit}</p>
+                    <p className="text-xl sm:text-2xl font-bold text-green-700">
+                      {typeof tradingAdvice.takeProfit === 'string' ? tradingAdvice.takeProfit : JSON.stringify(tradingAdvice.takeProfit)}
+                    </p>
                   </div>
                 </div>
 
@@ -690,22 +1336,30 @@ export default function Home() {
                   <div className="space-y-2">
                     <div className="bg-white rounded-lg p-3 shadow-sm">
                       <h4 className="text-base font-semibold text-gray-700">시장 트렌드</h4>
-                      <p className="text-sm sm:text-base text-gray-600">{tradingAdvice.analysis.trend}</p>
+                      <p className="text-sm sm:text-base text-gray-600">
+                        {typeof tradingAdvice.analysis.trend === 'string' ? tradingAdvice.analysis.trend : JSON.stringify(tradingAdvice.analysis.trend)}
+                      </p>
                     </div>
 
                     <div className="bg-white rounded-lg p-3 shadow-sm">
                       <h4 className="text-base font-semibold text-gray-700">기술적 지표</h4>
-                      <p className="text-sm sm:text-base text-gray-600">{tradingAdvice.analysis.technical}</p>
+                      <p className="text-sm sm:text-base text-gray-600">
+                        {typeof tradingAdvice.analysis.technical === 'string' ? tradingAdvice.analysis.technical : JSON.stringify(tradingAdvice.analysis.technical)}
+                      </p>
                     </div>
 
                     <div className="bg-white rounded-lg p-3 shadow-sm">
                       <h4 className="text-base font-semibold text-gray-700">거래량 분석</h4>
-                      <p className="text-sm sm:text-base text-gray-600">{tradingAdvice.analysis.volume}</p>
+                      <p className="text-sm sm:text-base text-gray-600">
+                        {typeof tradingAdvice.analysis.volume === 'string' ? tradingAdvice.analysis.volume : JSON.stringify(tradingAdvice.analysis.volume)}
+                      </p>
                     </div>
 
                     <div className="bg-white rounded-lg p-3 shadow-sm border-l-4 border-blue-500">
                       <h4 className="text-base font-semibold text-gray-700">종합 결론</h4>
-                      <p className="text-sm sm:text-base text-gray-600">{tradingAdvice.analysis.conclusion}</p>
+                      <p className="text-sm sm:text-base text-gray-600">
+                        {typeof tradingAdvice.analysis.conclusion === 'string' ? tradingAdvice.analysis.conclusion : JSON.stringify(tradingAdvice.analysis.conclusion)}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -752,13 +1406,60 @@ export default function Home() {
         <div className="grid grid-cols-1 gap-6 mb-8">
           {/* 가격 차트 */}
           <div className="bg-white rounded-xl shadow-lg p-6">
-            <div className="w-full h-[400px]">
+            <div className="w-full h-[700px]">
               {chartData.datasets.length > 0 && (
                 <Line
                   data={chartData}
                   options={chartOptions}
                 />
               )}
+            </div>
+            {/* 피보나치 레벨 범례 수정 - 퍼센트 순서대로 정렬 */}
+            <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+              <div className="flex items-center">
+                <div className="w-4 h-4 rounded mr-2" style={{ backgroundColor: 'rgba(255, 215, 0, 0.8)' }} />
+                <span>피보나치 0% - ${chartOptions.plugins.annotation.annotations.fib0.yMin.toFixed(2)}</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 rounded mr-2" style={{ backgroundColor: 'rgba(255, 182, 193, 0.8)' }} />
+                <span>피보나치 23.6% - ${chartOptions.plugins.annotation.annotations.fib236.yMin.toFixed(2)}</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 rounded mr-2" style={{ backgroundColor: 'rgba(144, 238, 144, 0.8)' }} />
+                <span>피보나치 38.2% - ${chartOptions.plugins.annotation.annotations.fib382.yMin.toFixed(2)}</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 rounded mr-2" style={{ backgroundColor: 'rgba(135, 206, 235, 0.8)' }} />
+                <span>피보나치 50% - ${chartOptions.plugins.annotation.annotations.fib500.yMin.toFixed(2)}</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 rounded mr-2" style={{ backgroundColor: 'rgba(221, 160, 221, 0.8)' }} />
+                <span>피보나치 61.8% - ${chartOptions.plugins.annotation.annotations.fib618.yMin.toFixed(2)}</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 rounded mr-2" style={{ backgroundColor: 'rgba(255, 165, 0, 0.8)' }} />
+                <span>피보나치 78.6% - ${chartOptions.plugins.annotation.annotations.fib786.yMin.toFixed(2)}</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 rounded mr-2" style={{ backgroundColor: 'rgba(255, 99, 71, 0.8)' }} />
+                <span>피보나치 100% - ${chartOptions.plugins.annotation.annotations.fib1000.yMin.toFixed(2)}</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 rounded mr-2" style={{ backgroundColor: 'rgba(147, 112, 219, 0.8)' }} />
+                <span>피보나치 112.8% - ${chartOptions.plugins.annotation.annotations.fib1128.yMin.toFixed(2)}</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 rounded mr-2" style={{ backgroundColor: 'rgba(128, 0, 128, 0.8)' }} />
+                <span>피보나치 123.6% - ${chartOptions.plugins.annotation.annotations.fib1236.yMin.toFixed(2)}</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 rounded mr-2" style={{ backgroundColor: 'rgba(139, 0, 139, 0.8)' }} />
+                <span>피보나치 138.2% - ${chartOptions.plugins.annotation.annotations.fib1382.yMin.toFixed(2)}</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 rounded mr-2" style={{ backgroundColor: 'rgba(128, 0, 0, 0.8)' }} />
+                <span>피보나치 150% - ${chartOptions.plugins.annotation.annotations.fib1500.yMin.toFixed(2)}</span>
+              </div>
             </div>
           </div>
 

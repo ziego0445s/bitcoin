@@ -67,7 +67,7 @@ export async function POST(req: Request) {
       messages: [
         {
           role: "system",
-          content: "당신은 암호화폐 트레이딩 전문가입니다. 주어진 데이터를 분석하여 JSON 형식으로 응답해주세요. 특히 24시간 동안의 가격 변화와 지표 변화를 중점적으로 분석해주세요. 진입가격은 현재가격 보다 높을순 없어 볼린저밴드 하단보다 위쪽으로 시장상황에 맞게 잘 지정해줘"
+          content: "당신은 암호화폐 트레이딩 전문가입니다. 주어진 데이터를 종합 분석하고 피보나치 레벨을 참고하여 현재가보다는 진입가가 높지않게 최적의 진입가(buyTarget),손절가(stopLoss),익절가(takeProfit)를 JSON 형식으로 응답해주세요. "
         },
         {
           role: "user",
@@ -86,6 +86,17 @@ export async function POST(req: Request) {
             현재 가격 정보:
             - 현재가: $${data.price}
             - 24시간 변화율: ${data.priceChange24h}%
+            
+            피보나치 레벨:
+            - 0%: $${data.fibonacciLevels.level0}
+            - 23.6%: $${data.fibonacciLevels.level236}
+            - 38.2%: $${data.fibonacciLevels.level382}
+            - 50%: $${data.fibonacciLevels.level500}
+            - 61.8%: $${data.fibonacciLevels.level618}
+            - 78.6%: $${data.fibonacciLevels.level786}
+            - 100%: $${data.fibonacciLevels.level1000}
+            - 123.6%: $${data.fibonacciLevels.level1236}
+            - 150%: $${data.fibonacciLevels.level1500}
             
             기술적 지표:
             - RSI (14): ${data.rsi}
@@ -117,10 +128,6 @@ export async function POST(req: Request) {
             선물 시장:
             - 펀딩비: ${data.fundingRate}%
             - 미체결약정: ${data.openInterest}
-
-            buyTarget는 롱으로 진입하는 가격을 뜻하고
-            stopLoss 는 손절가를 말해
-            takeProfit 익절가를 말하는거야
 
             {
               "buyTarget": "$XX,XXX",
