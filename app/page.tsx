@@ -215,6 +215,7 @@ export default function Home() {
       }
     }
   });
+  const [lastRequestTime, setLastRequestTime] = useState<number | null>(null);
 
   // 실시간 가격 가져오기 useEffect를 15분 간격 업데이트로 수정
   useEffect(() => {
@@ -375,6 +376,16 @@ export default function Home() {
 
   // GPT 트레이딩 조언 가져오기
   const fetchTradingAdvice = useCallback(async () => {
+    const now = Date.now();
+    const thirtyMinutes = 30 * 60 * 1000; // 30분을 밀리초로 변환
+
+    // 마지막 요청 시간 체크
+    if (lastRequestTime && (now - lastRequestTime) < thirtyMinutes) {
+      const remainingTime = Math.ceil((thirtyMinutes - (now - lastRequestTime)) / 60000);
+      alert(`다음 분석은 ${remainingTime}분 후에 가능합니다.`);
+      return;
+    }
+
     try {
       setIsLoading(true);
       
@@ -511,6 +522,8 @@ export default function Home() {
         throw new Error(responseData.error);
       }
 
+      // 분석 성공 시 마지막 요청 시간 업데이트
+      setLastRequestTime(now);
       setTradingAdvice(responseData);
       setIsGptResponse(true);
     } catch (err) {
@@ -525,7 +538,37 @@ export default function Home() {
     } finally {
       setIsLoading(false);
     }
-  }, [price, chartData, rsiData, volumeData]);
+  }, [price, chartData, rsiData, volumeData, lastRequestTime]);
+
+  // 버튼 부분에 남은 시간 표시 추가
+  const getRemainingTime = () => {
+    if (!lastRequestTime) return null;
+    
+    const now = Date.now();
+    const thirtyMinutes = 30 * 60 * 1000;
+    const timePassed = now - lastRequestTime;
+    
+    if (timePassed >= thirtyMinutes) return null;
+    
+    return Math.ceil((thirtyMinutes - timePassed) / 60000);
+  };
+
+  // 버튼 텍스트 동적 생성
+  const getButtonText = () => {
+    if (isLoading) return '분석 중...';
+    
+    const remainingTime = getRemainingTime();
+    if (remainingTime) return `다음 분석까지 ${remainingTime}분 남음`;
+    
+    return '새로운 분석 받기';
+  };
+
+  // 버튼 비활성화 상태 확인
+  const isButtonDisabled = () => {
+    if (isLoading) return true;
+    const remainingTime = getRemainingTime();
+    return remainingTime !== null;
+  };
 
   return (
     <main className="min-h-screen bg-gray-50 p-2 sm:p-8">
@@ -562,10 +605,10 @@ export default function Home() {
             </div>
             <button
               onClick={fetchTradingAdvice}
-              disabled={isLoading}
+              disabled={isButtonDisabled()}
               className={`px-6 py-3 rounded-lg font-semibold transition-all transform
-                ${isLoading 
-                  ? 'bg-gray-300 cursor-not-allowed' 
+                ${isButtonDisabled()
+                  ? 'bg-gray-300 cursor-not-allowed'
                   : 'bg-blue-600 hover:bg-blue-700 hover:shadow-lg active:scale-95'
                 } text-white`}
             >
@@ -577,7 +620,7 @@ export default function Home() {
                   </svg>
                   분석 중...
                 </span>
-              ) : '새로운 분석 받기'}
+              ) : getButtonText()}
             </button>
           </div>
           
