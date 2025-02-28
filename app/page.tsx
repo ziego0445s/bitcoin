@@ -1323,6 +1323,16 @@ export default function Home() {
         <div className="grid grid-cols-1 gap-6 mb-8">
           {/* 가격 차트 */}
           <div className="bg-white rounded-xl shadow-lg p-6">
+            {/* 현재 가격 표시 수정 */}
+            <div className="flex justify-between items-center mb-4">
+              <div className="text-sm text-gray-600">
+                Current Price: <span className="font-semibold">${Number(price).toLocaleString()}</span>
+              </div>
+              <div className="text-sm text-gray-500">
+                {currentTime}
+              </div>
+            </div>
+            
             <div className="w-full h-[700px]">
               {chartData.datasets.length > 0 && (
                 <Line
@@ -1331,7 +1341,7 @@ export default function Home() {
                 />
               )}
             </div>
-            {/* 피보나치 레벨 범례 수정 - 퍼센트 순서대로 정렬 */}
+            {/* 피보나치 레벨 범례 */}
             <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
               <div className="flex items-center">
                 <div className="w-4 h-4 rounded mr-2" style={{ backgroundColor: 'rgba(255, 215, 0, 0.8)' }} />
