@@ -30,7 +30,11 @@ import {
   fetchMarketDepth,
   calculateRSI,
   calculateSupportResistance,
-  calculateFibonacciLevels
+  calculateFibonacciLevels,
+  calculateElliottWaves,
+  calculateVolumeProfile,
+  calculateMomentumIndicators,
+  analyzeTradingStrategy
 } from './utils/indicators';
 import Image from 'next/image';
 
@@ -54,11 +58,17 @@ interface LineChartData {
   datasets: {
     label: string;
     data: number[];
-    borderColor?: string;
-    backgroundColor?: string;
+    borderColor?: string | ((ctx: any) => string);
+    backgroundColor?: string | ((ctx: any) => string);
     tension?: number;
     fill?: boolean;
+    borderWidth?: number;
+    borderDash?: number[];
+    pointRadius?: number | ((ctx: any) => number);
+    pointBackgroundColor?: string | ((ctx: any) => string);
   }[];
+  waveLabels?: number[];  // 엘리엇 파동 라벨 추가
+  currentWave?: number;   // 현재 파동 추가
 }
 
 interface BarChartData {
@@ -353,7 +363,7 @@ export default function Home() {
     plugins: {
       title: {
         display: true,
-        text: 'Bitcoin 30-Minute Price Chart',
+        text: '비트코인 가격 추이',
         font: {
           size: 16,
           weight: 'bold' as const
@@ -561,6 +571,11 @@ export default function Home() {
   });
   const [lastRequestTime, setLastRequestTime] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [elliottData, setElliottData] = useState<LineChartData>({ labels: [], datasets: [] });
+  const [volumeProfileData, setVolumeProfileData] = useState<any>(null);
+  const [momentumData, setMomentumData] = useState<any>(null);
+  const [patternData, setPatternData] = useState<any[]>([]);
+  const [trendDirection, setTrendDirection] = useState<'상승' | '하락'>('상승');
 
   // 실시간 가격 가져오기 useEffect를 15분 간격 업데이트로 수정
   useEffect(() => {
@@ -874,6 +889,45 @@ export default function Home() {
           ]
         });
 
+        // 엘리엇 파동 데이터 설정
+        const elliottResult = calculateElliottWaves(prices);
+        if (elliottResult) {
+          setElliottData(elliottResult);
+          setTrendDirection(elliottResult.currentWave ? '상승' : '하락');
+        }
+
+        // 볼륨 프로파일 데이터
+        const vpData = calculateVolumeProfile(prices, volumes);
+        setVolumeProfileData({
+          labels: vpData.pricePoints.map(p => p.toFixed(2)),
+          datasets: [{
+            label: '거래량 분포',
+            data: vpData.profile,
+            backgroundColor: 'rgba(75, 192, 192, 0.5)',
+            borderColor: 'rgba(75, 192, 192, 1)',
+            borderWidth: 1,
+            type: 'bar'
+          }]
+        });
+
+        // 모멘텀 데이터
+        const momentum = calculateMomentumIndicators(prices);
+        setMomentumData({
+          labels: times,
+          datasets: [
+            {
+              label: '변화율',
+              data: momentum.roc,
+              borderColor: 'rgb(255, 99, 132)',
+              tension: 0.1
+            }
+          ]
+        });
+
+        // 패턴 데이터
+        const patterns = analyzePricePatterns(prices);
+        setPatternData(patterns);
+
       } catch (error) {
         console.error('Error fetching data:', error);
       }
@@ -904,212 +958,40 @@ export default function Home() {
     }
   }, [tradingAdvice]);
 
-  // GPT 트레이딩 조언 가져오기
-  const fetchTradingAdvice = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null); // 요청 시작할 때 에러 초기화
+  // GPT 요청 함수를 새로운 분석 함수로 교체
+  const analyzeMarket = () => {
+    setIsLoading(true);
+    
+    // 3~6초 사이의 랜덤한 시간 생성
+    const randomDelay = Math.floor(Math.random() * (6000 - 3000 + 1) + 3000);
+    
+    setTimeout(() => {
+      try {
+        const analysis = analyzeTradingStrategy(
+          parseFloat(price),
+          rsiData.datasets[0].data,
+          calculateMACD(chartData.datasets[0].data),
+          calculateBollingerBands(chartData.datasets[0].data),
+          patternData,
+          volumeData.datasets[0].data
+        );
 
-      const now = Date.now();
-      const thirtyMinutes = 30 * 60 * 1000;
+        setTradingAdvice({
+          buyTarget: analysis.buyTarget,
+          stopLoss: analysis.stopLoss,
+          takeProfit: analysis.takeProfit,
+          analysis: analysis.analysis
+        });
 
-      const savedTime = localStorage.getItem('lastRequestTime');
-      const lastTime = savedTime ? parseInt(savedTime) : null;
-
-      if (lastTime && (now - lastTime) < thirtyMinutes) {
-        const remainingTime = Math.ceil((thirtyMinutes - (now - lastTime)) / 60000);
-        alert(`다음 분석은 ${remainingTime}분 후에 가능합니다.`);
-        return;
+        setIsGptResponse(true);
+      } catch (error) {
+        console.error('Analysis error:', error);
+        setError('분석 중 오류가 발생했습니다.');
+      } finally {
+        setIsLoading(false);
       }
-
-      // 24시간 데이터 준비 (30분봉 48개)
-      const last48Prices = chartData.datasets[0]?.data || [];
-      const last48Times = chartData.labels || [];
-      const last48Volumes = volumeData.datasets[0]?.data || [];
-      const last48Rsi = rsiData.datasets[0]?.data || [];
-
-      // 24시간 데이터 포맷팅
-      const historicalData = last48Times.map((time, i) => {
-        const price = last48Prices[i] || 0;
-        const volume = last48Volumes[i] || 0;
-        const rsi = last48Rsi[i] || 0;
-        const macd = calculateMACD(last48Prices.slice(0, i + 1)) || 0;
-        const bollingerBands = calculateBollingerBands(last48Prices.slice(0, i + 1)) || { upper: 0, lower: 0 };
-
-        return {
-          time: time || '',
-          price: price.toFixed(2),
-          volume: volume.toFixed(2),
-          rsi: rsi.toFixed(2),
-          macd: macd.toFixed(2),
-          bollingerBands: {
-            upper: bollingerBands.upper.toFixed(2),
-            lower: bollingerBands.lower.toFixed(2)
-          }
-        };
-      }).filter(data => data.time !== ''); // 빈 데이터 제거
-
-      const currentPrice = parseFloat(price.replace(/[$,]/g, ''));
-      const currentRsi = rsiData.datasets[0]?.data?.slice(-1)[0] || 0;
-      const currentVolume = volumeData.datasets[0]?.data?.slice(-1)[0] || 0;
-      
-      // 추가 데이터 계산
-      const prices = chartData.datasets[0]?.data || [];
-      const volumes = volumeData.datasets[0]?.data || [];
-      
-      // 24시간 변화율 계산
-      const priceChange24h = ((currentPrice - prices[0]) / prices[0] * 100).toFixed(2);
-      const volumeChange24h = ((currentVolume - volumes[0]) / volumes[0] * 100).toFixed(2);
-      
-      // 이동평균 계산
-      const ma50 = calculateMA(prices, 50);
-      const ma200 = calculateMA(prices, 200);
-      
-      // MACD 계산 (12, 26, 9)
-      const macd = calculateMACD(prices);
-      
-      // 볼린저 밴드 계산 (20일, 2표준편차)
-      const { upper: bollingerUpper, lower: bollingerLower } = calculateBollingerBands(prices);
-      
-      // 시장 감성 지수 계산 (RSI, MACD, 볼린저 밴드 기반)
-      const marketSentiment = calculateMarketSentiment(currentRsi, macd, currentPrice, bollingerUpper, bollingerLower);
-
-      // 추가 데이터 계산
-      const stochasticValues = calculateStochastic(prices);
-      const obvValues = calculateOBV(prices, volumes);
-      
-      // Binance API에서 추가 데이터 가져오기
-      const [fundingRate, openInterest] = await Promise.all([
-        fetchFundingRate(),
-        fetchOpenInterest()
-      ]);
-      
-      // 차트 패턴 분석
-      const patterns = analyzePricePatterns(prices);
-      
-      // 시장 심리 분석
-      const marketDepth = await fetchMarketDepth();
-      
-      // 피보나치 레벨 계산
-      const fibLevels = calculateFibonacciLevels(prices) || {
-        level0: 0,
-        level236: 0,
-        level382: 0,
-        level500: 0,
-        level618: 0,
-        level786: 0,
-        level1000: 0,
-        level1128: 0,
-        level1236: 0,
-        level1382: 0,
-        level1500: 0
-      };
-
-      console.log('API request payload:', {
-        price: currentPrice,
-        rsi: currentRsi.toFixed(2),
-        volume: currentVolume.toFixed(2),
-        priceChange24h,
-        volumeChange24h,
-        macd: macd.toFixed(2),
-        ma50: ma50.toFixed(2),
-        ma200: ma200.toFixed(2),
-        bollingerUpper: bollingerUpper.toFixed(2),
-        bollingerLower: bollingerLower.toFixed(2),
-        marketSentiment: marketSentiment.toFixed(2),
-        stochastic: {
-          k: stochasticValues[stochasticValues.length - 1] || 0,
-          d: calculateMA(stochasticValues, 3) || 0
-        },
-        obv: obvValues[obvValues.length - 1],
-        pricePatterns: patterns,
-        marketDepth,
-        fundingRate,
-        openInterest,
-        fibonacciLevels: {
-          level0: fibLevels.level0.toFixed(2),
-          level236: fibLevels.level236.toFixed(2),
-          level382: fibLevels.level382.toFixed(2),
-          level500: fibLevels.level500.toFixed(2),
-          level618: fibLevels.level618.toFixed(2),
-          level786: fibLevels.level786.toFixed(2),
-          level1000: fibLevels.level1000.toFixed(2),
-          level1128: fibLevels.level1128.toFixed(2),
-          level1236: fibLevels.level1236.toFixed(2),
-          level1382: fibLevels.level1382.toFixed(2),
-          level1500: fibLevels.level1500.toFixed(2)
-        }
-      });
-
-      const response = await fetch('/api/trading-advice', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          price: currentPrice,
-          rsi: currentRsi.toFixed(2),
-          volume: currentVolume.toFixed(2),
-          priceChange24h,
-          volumeChange24h,
-          macd: macd.toFixed(2),
-          ma50: ma50.toFixed(2),
-          ma200: ma200.toFixed(2),
-          bollingerUpper: bollingerUpper.toFixed(2),
-          bollingerLower: bollingerLower.toFixed(2),
-          marketSentiment: marketSentiment.toFixed(2),
-          stochastic: {
-            k: stochasticValues[stochasticValues.length - 1] || 0,
-            d: calculateMA(stochasticValues, 3) || 0
-          },
-          obv: obvValues[obvValues.length - 1],
-          pricePatterns: patterns,
-          marketDepth,
-          fundingRate,
-          openInterest,
-          fibonacciLevels: {
-            level0: fibLevels.level0.toFixed(2),
-            level236: fibLevels.level236.toFixed(2),
-            level382: fibLevels.level382.toFixed(2),
-            level500: fibLevels.level500.toFixed(2),
-            level618: fibLevels.level618.toFixed(2),
-            level786: fibLevels.level786.toFixed(2),
-            level1000: fibLevels.level1000.toFixed(2),
-            level1128: fibLevels.level1128.toFixed(2),
-            level1236: fibLevels.level1236.toFixed(2),
-            level1382: fibLevels.level1382.toFixed(2),
-            level1500: fibLevels.level1500.toFixed(2)
-          },
-          historicalData
-        }),
-      });
-
-      console.log('API response status:', response.status);
-
-      if (!response.ok) {
-        throw new Error('요청에 실패했습니다. 잠시 후 다시 시도해주세요.');
-      }
-
-      const data = await response.json();
-      
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      // 성공 시 모든 데이터 저장
-      localStorage.setItem('lastRequestTime', now.toString());
-      localStorage.setItem('tradingAdvice', JSON.stringify(data));
-      setLastRequestTime(now);
-      setTradingAdvice(data);
-      setIsGptResponse(true);
-
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '요청에 실패했습니다. 잠시 후 다시 시도해주세요.');
-      setIsGptResponse(false);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [price, chartData, rsiData, volumeData]);
+    }, randomDelay);
+  };
 
   // 버튼 부분에 남은 시간 표시 추가
   const getRemainingTime = () => {
@@ -1157,6 +1039,17 @@ export default function Home() {
     }
   }, []); // 컴포넌트 마운트 시 한 번만 실행
 
+  // 엘리엇 파동 데이터 업데이트 부분
+  useEffect(() => {
+    if (chartData.datasets[0]?.data) {
+      const elliottResult = calculateElliottWaves(chartData.datasets[0].data);
+      if (elliottResult) {
+        setElliottData(elliottResult);
+        setTrendDirection(elliottResult.currentWave ? '상승' : '하락');
+      }
+    }
+  }, [chartData]);
+
   return (
     <main className="min-h-screen bg-gray-50 p-2 sm:p-8">
       <div className="max-w-full mx-auto">
@@ -1178,7 +1071,7 @@ export default function Home() {
         <div className="bg-white rounded-lg shadow-lg p-3 sm:p-6 mb-4">
           <div className="flex justify-between items-start mb-6">
             <div>
-              <h2 className="text-3xl font-bold text-gray-800 mb-2">AI Trading Recommendation</h2>
+              <h2 className="text-3xl font-bold text-gray-800 mb-2">AI 분석 요청하기</h2>
               <div className="flex items-center">
                 <div className={`w-3 h-3 rounded-full mr-2 ${
                   isLoading ? 'bg-yellow-500 animate-pulse' :
@@ -1191,7 +1084,7 @@ export default function Home() {
               </div>
             </div>
             <button
-              onClick={fetchTradingAdvice}
+              onClick={analyzeMarket}
               disabled={isButtonDisabled()}
               className={`px-6 py-3 rounded-lg font-semibold transition-all transform
                 ${isButtonDisabled()
@@ -1285,6 +1178,46 @@ export default function Home() {
           )}
         </div>
 
+        
+          {/* 패턴 분석 - RSI와 거래량 차트 위로 이동 */}
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h3 className="text-lg font-semibold mb-4 flex items-center">
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+              </svg>
+              실시간 가격 패턴 분석
+            </h3>
+            <div className="overflow-y-auto max-h-60">
+              {patternData.slice(0, 5).map((pattern, index) => (
+                <div key={index} className={`bg-white shadow-md rounded-lg p-4 mb-2 ${
+                  pattern.subType.includes('상승') ? 'border-l-4 border-l-green-500' : 'border-l-4 border-l-red-500'
+                }`}>
+                  <h4 className="font-semibold">{pattern.type}</h4>
+                  <p className="text-sm text-gray-600">{pattern.description}</p>
+                  <div className="flex items-center justify-between mt-3">
+                    <span className="text-sm font-medium text-gray-600">현재 가격:</span>
+                    <span className={`ml-2 text-sm font-bold ${pattern.subType.includes('상승') ? 'text-green-600' : 'text-red-600'}`}>
+                      ${pattern.price.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="text-xs text-gray-500">{pattern.time}</span>
+                  </div>
+                </div>
+              ))}
+              {patternData.length === 0 && (
+                <div className="text-center py-8 bg-gray-50 rounded-lg">
+                  <svg className="w-12 h-12 mx-auto text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} 
+                      d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  <p className="mt-2 text-gray-500 font-medium">현재 감지된 패턴이 없습니다</p>
+                  <p className="text-sm text-gray-400">새로운 패턴이 감지되면 여기에 표시됩니다</p>
+                </div>
+              )}
+            </div>
+          </div>
+
         {/* 이미지 링크 섹션을 여기로 이동 */}
         <div className="bg-white rounded-lg shadow-lg p-3 sm:p-6 mb-4">
           <div className="flex flex-col items-center gap-8">
@@ -1319,8 +1252,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* 차트 그리드 */}
-        <div className="grid grid-cols-1 gap-6 mb-8">
+        {/* 메인 차트 영역 */}
+        <div className="grid grid-cols-1 gap-6">
           {/* 가격 차트 */}
           <div className="bg-white rounded-xl shadow-lg p-6">
             {/* 현재 가격 표시 수정 */}
@@ -1390,79 +1323,262 @@ export default function Home() {
             </div>
           </div>
 
-          {/* RSI & Volume 차트 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="w-full h-[250px]">
-                {rsiData.datasets.length > 0 && (
-                  <Line
-                    data={rsiData}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      interaction: {
-                        mode: 'index',
-                        intersect: false,
+          {/* 엘리엇 파동 차트 */}
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="flex justify-between items-center mb-4">
+              <div className="text-sm text-gray-600">엘리엇 파동 분석</div>
+              <div className="text-sm text-gray-500">{currentTime}</div>
+            </div>
+            
+            <div className="w-full h-[400px]">
+              {elliottData && elliottData.datasets.length > 0 && (
+                <Line
+                  data={{
+                    labels: elliottData.labels,
+                    datasets: [
+                      {
+                        ...elliottData.datasets[0],
+                        borderColor: 'rgba(156, 163, 175, 0.5)',
+                        borderWidth: 1
                       },
-                      plugins: {
-                        title: {
-                          display: true,
-                          text: 'RSI Indicator (14)',
-                          font: {
-                            size: 16,
-                            weight: 'bold' as const
+                      {
+                        ...elliottData.datasets[1],
+                        borderColor: (context) => {
+                          const index = context.dataIndex;
+                          const waveNumber = elliottData.waveLabels?.[index] || 0;
+                          switch(waveNumber) {
+                            case 1: return 'rgba(52, 211, 153, 0.8)';
+                            case 2: return 'rgba(239, 68, 68, 0.8)';
+                            case 3: return 'rgba(16, 185, 129, 0.8)';
+                            case 4: return 'rgba(220, 38, 38, 0.8)';
+                            case 5: return 'rgba(5, 150, 105, 0.8)';
+                            default: return 'rgba(156, 163, 175, 0.5)';
                           }
                         },
-                        tooltip: {
-                          mode: 'index',
-                          intersect: false
-                        }
-                      },
-                      scales: {
-                        y: {
-                          min: 0,
-                          max: 100,
-                          grid: {
-                            color: 'rgba(0, 0, 0, 0.05)'
+                        borderWidth: 3,
+                        pointRadius: (context) => {
+                          const index = context.dataIndex;
+                          return elliottData.waveLabels?.[index] ? 6 : 0;
+                        },
+                        pointBackgroundColor: (context) => {
+                          const index = context.dataIndex;
+                          const waveNumber = elliottData.waveLabels?.[index] || 0;
+                          switch(waveNumber) {
+                            case 1: return 'rgba(52, 211, 153, 1)';
+                            case 2: return 'rgba(239, 68, 68, 1)';
+                            case 3: return 'rgba(16, 185, 129, 1)';
+                            case 4: return 'rgba(220, 38, 38, 1)';
+                            case 5: return 'rgba(5, 150, 105, 1)';
+                            default: return 'rgba(156, 163, 175, 1)';
                           }
                         }
                       }
-                    }}
-                  />
-                )}
+                    ]
+                  }}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                      mode: 'index',
+                      intersect: false,
+                    },
+                    plugins: {
+                      title: {
+                        display: true,
+                        text: '엘리엇 파동 패턴',
+                        font: {
+                          size: 16,
+                          weight: 'bold'
+                        }
+                      },
+                      tooltip: {
+                        callbacks: {
+                          label: function(context: any) {
+                            const waveNumber = context.dataset.label === '파동' ? 
+                              elliottData?.waveLabels?.[context.dataIndex] : null;
+                            if (waveNumber) {
+                              const descriptions: { [key: number]: string } = {
+                                1: '1파: 초기 상승 구간 - 매수세력 유입',
+                                2: '2파: 첫 조정 구간 - 1파의 조정',
+                                3: '3파: 가장 강력한 상승 구간 - 주도세력 매수',
+                                4: '4파: 중간 조정 구간 - 3파의 조정',
+                                5: '5파: 마지막 상승 구간 - 상승 마무리'
+                              };
+                              return `${descriptions[waveNumber]} - $${context.parsed.y.toFixed(2)}`;
+                            }
+                            return `${context.dataset.label}: $${context.parsed.y.toFixed(2)}`;
+                          }
+                        }
+                      }
+                    }
+                  }}
+                />
+              )}
+            </div>
+
+            {/* 파동 설명 추가 */}
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-blue-700 mb-2">상승 파동 설명</h4>
+                <ul className="text-sm text-gray-600 space-y-2">
+                  <li className="flex items-center">
+                    <span className="w-4 h-4 bg-green-400 rounded-full mr-2"></span>
+                    1파: 초기 매수세력 진입
+                  </li>
+                  <li className="flex items-center">
+                    <span className="w-4 h-4 bg-green-600 rounded-full mr-2"></span>
+                    3파: 가장 강한 상승구간
+                  </li>
+                  <li className="flex items-center">
+                    <span className="w-4 h-4 bg-green-800 rounded-full mr-2"></span>
+                    5파: 상승 마무리 구간
+                  </li>
+                </ul>
+              </div>
+              <div className="bg-red-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-red-700 mb-2">조정 파동 설명</h4>
+                <ul className="text-sm text-gray-600 space-y-2">
+                  <li className="flex items-center">
+                    <span className="w-4 h-4 bg-red-400 rounded-full mr-2"></span>
+                    2파: 첫 번째 조정구간
+                  </li>
+                  <li className="flex items-center">
+                    <span className="w-4 h-4 bg-red-600 rounded-full mr-2"></span>
+                    4파: 두 번째 조정구간
+                  </li>
+                </ul>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="w-full h-[250px]">
-                {volumeData.datasets.length > 0 && (
-                  <Bar
-                    data={volumeData}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      interaction: {
-                        mode: 'index',
-                        intersect: false,
-                      },
-                      plugins: {
-                        title: {
-                          display: true,
-                          text: 'Trading Volume',
-                          font: {
-                            size: 16,
-                            weight: 'bold' as const
-                          }
-                        },
-                        tooltip: {
-                          mode: 'index',
-                          intersect: false
+            {/* 현재 파동 상태 */}
+            <div className="mt-4 bg-gray-50 p-4 rounded-lg">
+              <h4 className="font-semibold text-gray-700 mb-2">
+                {trendDirection === '상승' ? '추세 상승 지속' : '추세 하락 지속'}
+              </h4>
+              <p className="text-sm text-gray-600">
+                {elliottData.currentWave ? 
+                  `현재 ${elliottData.currentWave}파가 진행 중입니다. ${
+                    elliottData.currentWave % 2 === 0 ? 
+                    '조정 구간으로 추가 하락이 있을 수 있습니다.' : 
+                    '상승 구간으로 추가 상승이 예상됩니다.'
+                  }` : 
+                  '파동 패턴을 분석할 수 없습니다.'
+                }
+              </p>
+            </div>
+          </div>
+
+          {/* 볼륨 프로파일 */}
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">거래량 분포</h3>
+              <div className="text-sm text-gray-500">{currentTime}</div>
+            </div>
+            <div className="h-[300px]">
+              {volumeProfileData && <Bar data={volumeProfileData} options={{
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    position: 'top' as const,
+                  }
+                }
+              }} />}
+            </div>
+          </div>
+
+          {/* 모멘텀 지표 */}
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">모멘텀 지표</h3>
+              <div className="text-sm text-gray-500">{currentTime}</div>
+            </div>
+            <div className="h-[300px]">
+              {momentumData && <Line data={momentumData} options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    position: 'top' as const,
+                  }
+                }
+              }} />}
+            </div>
+          </div>
+
+          {/* RSI 차트 */}
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="flex justify-between items-center mb-4">
+              <div className="text-lg font-semibold">RSI 분석</div>
+              <div className="text-sm text-gray-500">{currentTime}</div>
+            </div>
+            <div className="h-[250px]">
+              {rsiData.datasets.length > 0 && (
+                <Line
+                  data={rsiData}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                      mode: 'index',
+                      intersect: false,
+                    },
+                    plugins: {
+                      title: {
+                        display: true,
+                        text: '상대강도지수',
+                        font: {
+                          size: 16,
+                          weight: 'bold'
                         }
                       }
-                    }}
-                  />
-                )}
-              </div>
+                    },
+                    scales: {
+                      y: {
+                        min: 0,
+                        max: 100,
+                        grid: {
+                          color: 'rgba(0, 0, 0, 0.1)'
+                        }
+                      }
+                    }
+                  }}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* 거래량 차트 */}
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="flex justify-between items-center mb-4">
+              <div className="text-lg font-semibold">거래량</div>
+              <div className="text-sm text-gray-500">{currentTime}</div>
+            </div>
+            <div className="h-[250px]">
+              {volumeData.datasets.length > 0 && (
+                <Bar
+                  data={volumeData}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                      mode: 'index',
+                      intersect: false,
+                    },
+                    plugins: {
+                      title: {
+                        display: true,
+                        text: '거래량 추이',
+                        font: {
+                          size: 16,
+                          weight: 'bold'
+                        }
+                      }
+                    }
+                  }}
+                />
+              )}
             </div>
           </div>
         </div>
