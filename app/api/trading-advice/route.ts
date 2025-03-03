@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */ // any 타입 사용에 대한 경고 무시
+
 import { OpenAI } from 'openai';
 import { NextResponse } from 'next/server';
 
